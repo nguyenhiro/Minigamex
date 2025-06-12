@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>MTT Sports Landing</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      font-family: 'Inter', Arial, sans-serif;
+      overflow-x: hidden;
+      background: #000;
+    }
+    .main-banner {
+      background: url('https://via.placeholder.com/1600x800/14213d/ffffff?text=Main+Banner') center center/cover no-repeat;
+      /* Đổi URL này thành banner chính của bạn */
+      width: 100vw;
+      height: 100vh;
+      min-height: 600px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(18, 21, 37, 0.60);
+      z-index: 1;
+    }
+    .content-center {
+      z-index: 2;
+      position: relative;
+      width: 100%;
+      text-align: center;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo {
+      margin-bottom: 18px;
+      width: 120px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .mt-title {
+      font-size: 42px;
+      font-weight: 800;
+      margin: 0 0 20px 0;
+      letter-spacing: 1.2px;
+    }
+    .player-count {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 22px;
+      color: #ffd600;
+      text-shadow: 1px 1px 6px #222, 0 0 10px #000;
+    }
+    .center-desc {
+      font-size: 24px;
+      font-weight: 500;
+      color: #fff;
+      margin-bottom: 22px;
+      text-shadow: 1px 1px 6px #222, 0 0 10px #000;
+    }
+    .main-btn {
+      background: #18f6d3;
+      border: none;
+      color: #111;
+      font-weight: 700;
+      font-size: 22px;
+      border-radius: 50px;
+      padding: 17px 46px;
+      margin-bottom: 18px;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+      box-shadow: 0 8px 24px rgba(24,246,211,.16);
+    }
+    .main-btn:hover {
+      background: #1cebaf;
+      transform: scale(1.06);
+    }
+    .scroll-indicator {
+      margin-top: 48px;
+      color: #fff;
+      opacity: 0.7;
+      font-size: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .scroll-indicator .mouse {
+      width: 26px;
+      height: 38px;
+      border: 2px solid #fff;
+      border-radius: 14px;
+      position: relative;
+      box-sizing: border-box;
+    }
+    .scroll-indicator .mouse-wheel {
+      width: 4px;
+      height: 10px;
+      background: #fff;
+      border-radius: 2px;
+      position: absolute;
+      left: 50%;
+      top: 8px;
+      transform: translateX(-50%);
+      animation: wheel-move 1.7s infinite cubic-bezier(.68,.41,.7,.99);
+    }
+    @keyframes wheel-move {
+      0% { top: 8px; opacity: 1;}
+      40% { top: 18px; opacity: .6;}
+      100% { top: 8px; opacity: 1;}
+    }
+    @media (max-width: 700px) {
+      .main-banner {min-height: 400px;}
+      .mt-title { font-size: 25px;}
+      .player-count { font-size: 19px;}
+      .main-btn { font-size: 17px; padding: 11px 26px;}
+      .center-desc { font-size: 16px;}
+    }
+  </style>
+</head>
+<body>
+  <section class="main-banner" style="background-image: url('4.png');">
+    <div class="overlay"></div>
+    <div class="content-center">
+      <!-- Logo có thể thay đổi -->
+      <img class="logo" src="logo.jpg" alt="Logo" />
+      <!-- Nội dung chào mừng, có thể thay đổi -->
+      <div class="center-desc" id="welcomeContent">Chào Mừng Đến Với MINIGAMEX!</div>
+      <!-- Số lượng người đã click, có thể cập nhật động -->
+      <div class="player-count"><span id="clickCount">0</span> Players Joined</div>
+      <!-- Nút tham gia -->
+      <button class="main-btn" id="joinBtn">Play Now</button>
+
+      <!-- Scroll indicator -->
+      <div class="scroll-indicator">
+        <div class="mouse">
+          <div class="mouse-wheel"></div>
+        </div>
+        <span>SCROLL</span>
+      </div>
+    </div>
+  </section>
+  <script>
+    // Cấu hình link cho nút Tham Gia
+    const JOIN_LINK = "https://example.com/play"; // Thay link tại đây
+    document.getElementById('joinBtn').onclick = function() {
+      // Tăng số click (demo, thực tế nên gọi backend)
+      let countSpan = document.getElementById('clickCount');
+      let count = parseInt(countSpan.innerText.replace(/,/g, '')) + 1;
+      countSpan.innerText = count.toLocaleString();
+      window.open(JOIN_LINK, '_blank');
+    };
+
+    // Cho phép thay đổi nội dung chào mừng
+    // document.getElementById('welcomeContent').innerText = "Chào mừng bạn đến với MTT Sports!";
+    // Đổi banner: đổi thuộc tính background-image ở .main-banner
+  </script>
+</body>
+</html>
