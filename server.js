@@ -11,6 +11,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Cho phép phục vụ các file tĩnh (HTML, CSS, JS...) trong cùng thư mục
+app.use(express.static(__dirname));
+
 const PORT = process.env.PORT || 3000;
 const RPC_URL = process.env.RPC_URL;
 const GAME_WALLET_ADDRESS = process.env.GAME_WALLET_ADDRESS;
@@ -283,4 +286,38 @@ app.post("/play/win", async (req, res) => {
     console.log("[Backend] [WIN] db.data sau khi ghi:", JSON.stringify(db.data));
 
     return res.json({ success: true, coins: db.data.users[userWalletLower] });
+});
+
+// ============= ĐẾM LƯỢT CLICK PHÒNG =============
+
+const CLICKS_FILE = './clicks.json';
+
+// Đọc số click từ file
+function getClicks() {
+    try {
+        return JSON.parse(fs.readFileSync(CLICKS_FILE, 'utf8'));
+    } catch {
+        // Nếu chưa có file, trả về giá trị mặc định cho 3 phòng
+        return { room1: 0, room2: 0, room3: 0 };
+    }
+}
+
+// Ghi số click vào file
+function saveClicks(data) {
+    fs.writeFileSync(CLICKS_FILE, JSON.stringify(data));
+}
+
+// API: Lấy số click hiện tại của các phòng
+app.get('/api/clicks', (req, res) => {
+    res.json(getClicks());
+});
+
+// API: Tăng số click của 1 phòng
+app.post('/api/clicks/:room', (req, res) => {
+    let clicks = getClicks();
+    const room = req.params.room;
+    if (!clicks[room]) clicks[room] = 0;
+    clicks[room]++;
+    saveClicks(clicks);
+    res.json({ count: clicks[room] });
 });
