@@ -137,7 +137,7 @@
       <img class="logo" src="logo.jpg" alt="Logo" />
       <!-- Nội dung chào mừng, có thể thay đổi -->
       <div class="center-desc" id="welcomeContent">Chào Mừng Đến Với MINIGAMEX!</div>
-      <!-- Số lượng người đã click, có thể cập nhật động -->
+      <!-- Số lượng người đã click, cập nhật động từ backend -->
       <div class="player-count"><span id="clickCount">0</span> Players Joined</div>
       <!-- Nút tham gia -->
       <button class="main-btn" id="joinBtn">Play Now</button>
@@ -154,12 +154,33 @@
   <script>
     // Cấu hình link cho nút Tham Gia
     const JOIN_LINK = "mian.html"; // Thay link tại đây
+
+    // Lấy số click từ backend khi load trang
+    function fetchClickCount() {
+      fetch('/api/clicks')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('clickCount').innerText = (data.room1 || 0).toLocaleString();
+        })
+        .catch(() => {
+          document.getElementById('clickCount').innerText = "0";
+        });
+    }
+
+    fetchClickCount();
+
     document.getElementById('joinBtn').onclick = function() {
-      // Tăng số click (demo, thực tế nên gọi backend)
-      let countSpan = document.getElementById('clickCount');
-      let count = parseInt(countSpan.innerText.replace(/,/g, '')) + 1;
-      countSpan.innerText = count.toLocaleString();
-      window.open(JOIN_LINK, '_blank');
+      // Gọi backend tăng click phòng landing (room1)
+      fetch('/api/clicks/room1', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('clickCount').innerText = (data.count || 0).toLocaleString();
+          window.open(JOIN_LINK, '_blank');
+        })
+        .catch(() => {
+          // Nếu lỗi backend, vẫn mở trang
+          window.open(JOIN_LINK, '_blank');
+        });
     };
 
     // Cho phép thay đổi nội dung chào mừng
