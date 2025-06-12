@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trò Chơi Đua Vịt - 2D Đơn Giản</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.0/dist/ethers.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #e0f2fe;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .game-container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            width: 100%;
+            max-width: 960px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: relative;
+        }
+        canvas {
+            border-radius: 0.5rem;
+            background-color: #a7f3d0;
+            width: 100%;
+            height: 250px;
+            display: block;
+        }
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .control-group label {
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.875rem;
+        }
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        button {
+            background-color: #cbd5e1;
+            color: #475569;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            flex-grow: 1;
+            min-width: 60px;
+            border: 1px solid #94a3b8;
+        }
+        button:not(.action-button):hover:enabled {
+            background-color: #94a3b8;
+            color: #1e293b;
+        }
+        button:active:enabled {
+            transform: translateY(1px);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .button-group button.bg-blue-200 {
+            background-color: #bfdbfe;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        .button-group button.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        .action-button {
+            background-color: #10B981;
+            color: white;
+            font-size: 1.125rem;
+            padding: 0.75rem 1.5rem;
+            border-color: #059669;
+        }
+        .action-button:hover:enabled {
+            background-color: #059669;
+        }
+        .game-info {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #334155;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .game-info span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .game-info span::before {
+            content: '💰';
+            font-size: 1.25rem;
+        }
+        .game-info .bet-amount::before {
+            content: '🎯';
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 20px;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 1rem;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #10B981;
+            border-radius: 10px;
+            transition: width 0.1s linear;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+        .progress-bar-text {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            color: #334155;
+            font-weight: 700;
+            font-size: 0.875rem;
+            z-index: 1;
+        }
+        .modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            z-index: 1000;
+            min-width: 300px;
+            max-width: 90%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.4);
+            z-index: 999;
+            display: none;
+        }
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        .modal-message {
+            font-size: 1rem;
+            color: #475569;
+            margin-bottom: 1rem;
+        }
+        .modal-emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            line-height: 1;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+        .modal-buttons button {
+            flex-grow: 1;
+            max-width: 150px;
+        }
+        @media (max-width: 768px) {
+            .game-container { padding: 1rem; gap: 1rem; }
+            .controls-grid { grid-template-columns: 1fr; }
+            .game-info { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .modal { min-width: unset; width: 95%; }
+        }
+        .wallet-btns { display: flex; align-items: center; gap: 0.5rem; }
+        .wallet-btns button { min-width: 120px; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div class="game-info">
+            <span id="totalCoinsDisplay"></span>
+            <span id="currentBetDisplay"></span>
+            <div class="wallet-btns">
+                <button id="connectWalletBtn" class="action-button" style="background:#6366f1;">Kết nối ví</button>
+                <button id="openDepositBtn" class="action-button" style="background:#f59e42;">Nạp/Rút Xu</button>
+            </div>
+        </div>
+        <div class="progress-bar-container">
+            <div id="raceProgressBar" class="progress-bar"></div>
+            <div id="raceProgressText" class="progress-bar-text">0%</div>
+        </div>
+        <div class="controls-grid">
+            <div class="control-group">
+                <label>Chọn vịt:</label>
+                <div id="duckSelection" class="button-group">
+                    <button data-duck-id="duck1">Vịt 1 🐥</button>
+                    <button data-duck-id="duck2">Vịt 2 🦆</button>
+                    <button data-duck-id="duck3">Vịt 3 🐧</button>
+                    <button data-duck-id="duck4">Vịt 4 🦢</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Đặt cược (Xu):</label>
+                <div id="betSelection" class="button-group">
+                    <button data-bet-amount="1">1</button>
+                    <button data-bet-amount="10">10</button>
+                    <button data-bet-amount="50">50</button>
+                    <button data-bet-amount="100">100</button>
+                    <button data-bet-amount="500">500</button>
+                </div>
+            </div>
+        </div>
+        <button id="startButton" class="action-button">Bắt đầu Đua!</button>
+        <div id="messageModal" class="modal hidden">
+            <h3 id="modalTitle" class="modal-title"></h3>
+            <p id="modalMessage" class="modal-message"></p>
+            <span id="modalEmoji" class="modal-emoji"></span>
+            <div class="modal-buttons">
+                <button id="closeMessageModalBtn" class="action-button !bg-blue-500 hover:!bg-blue-600">Đóng</button>
+            </div>
+        </div>
+        <div id="postRaceModal" class="modal hidden">
+            <h3 id="postRaceModalTitle" class="modal-title"></h3>
+            <p id="postRaceModalMessage" class="modal-message"></p>
+            <span id="postRaceModalEmoji" class="modal-emoji"></span>
+            <div class="modal-buttons">
+                <button id="postRacePlayAgainButton" class="action-button !bg-blue-500 hover:!bg-blue-600">Chơi Lại!</button>
+            </div>
+        </div>
+        <div id="modalOverlay" class="modal-overlay hidden"></div>
+    </div>
+    <script>
+        // ====== CONFIG & BACKEND ======
+        const BACKEND_URL = "http://localhost:3000";
+        let userAddress = null, provider = null, signer = null;
+        let totalCoins = 0;
+
+        // ====== DOM & GAME VARS ======
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('startButton');
+        const duckSelection = document.getElementById('duckSelection');
+        const betSelection = document.getElementById('betSelection');
+        const totalCoinsDisplay = document.getElementById('totalCoinsDisplay');
+        const currentBetDisplay = document.getElementById('currentBetDisplay');
+        const raceProgressBar = document.getElementById('raceProgressBar');
+        const raceProgressText = document.getElementById('raceProgressText');
+        const messageModal = document.getElementById('messageModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalEmoji = document.getElementById('modalEmoji');
+        let modalTimeout;
+        const postRaceModal = document.getElementById('postRaceModal');
+        const postRaceModalTitle = document.getElementById('postRaceModalTitle');
+        const postRaceModalMessage = document.getElementById('postRaceModalMessage');
+        const postRaceModalEmoji = document.getElementById('postRaceModalEmoji');
+        const postRacePlayAgainButton = document.getElementById('postRacePlayAgainButton');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const connectWalletBtn = document.getElementById('connectWalletBtn');
+        const openDepositBtn = document.getElementById('openDepositBtn');
+
+        let animationFrameId;
+        let selectedDuckId = null;
+        let currentBet = 0;
+        let isRaceInProgress = false;
+        let isRaceFinished = false;
+        let startTime;
+        let animationTimer = 0;
+
+        const ducks = [
+            { id: 'duck1', color: '#FCD34D', emoji: '🐥', pathProgress: 0, speed: 0, laneIndex: 0, selected: false, isWinner: false },
+            { id: 'duck2', color: '#34D399', emoji: '🦆', pathProgress: 0, speed: 0, laneIndex: 1, selected: false, isWinner: false },
+            { id: 'duck3', color: '#EF4444', emoji: '🐧', pathProgress: 0, speed: 0, laneIndex: 2, selected: false, isWinner: false },
+            { id: 'duck4', color: '#60A5FA', emoji: '🦢', pathProgress: 0, speed: 0, laneIndex: 3, selected: false, isWinner: false }
+        ];
+        const trackPadding = 50;
+        let totalTrackLength;
+        const laneHeight = 35;
+        const duckSize = laneHeight * 0.8;
+
+        function showMessageModal(title, message, emoji = 'ℹ️', duration = null) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalEmoji.textContent = emoji;
+            messageModal.classList.remove('hidden');
+            modalOverlay.classList.remove('hidden');
+            if (modalTimeout) clearTimeout(modalTimeout);
+            if (duration) {
+                modalTimeout = setTimeout(() => { hideMessageModal(); }, duration);
+            }
+        }
+        function hideMessageModal() {
+            messageModal.classList.add('hidden');
+            modalOverlay.classList.add('hidden');
+            if (modalTimeout) {
+                clearTimeout(modalTimeout);
+                modalTimeout = null;
+            }
+        }
+        function showPostRaceResultModal(title, message, emoji) {
+            postRaceModalTitle.textContent = title;
+            postRaceModalMessage.textContent = message;
+            postRaceModalEmoji.textContent = emoji;
+            postRaceModal.classList.remove('hidden');
+            modalOverlay.classList.remove('hidden');
+        }
+        function hidePostRaceResultModal() {
+            postRaceModal.classList.add('hidden');
+            modalOverlay.classList.add('hidden');
+        }
+
+        // === ĐỒNG BỘ XU CHỈ QUA API ===
+        async function refreshGameCoins() {
+            if (!userAddress) {
+                totalCoins = 0;
+                updateCoinsDisplay();
+                return;
+            }
+            try {
+                const response = await fetch(`${BACKEND_URL}/balance/${userAddress}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    totalCoins = data.coins;
+                    updateCoinsDisplay();
+                } else {
+                    totalCoins = 0;
+                    updateCoinsDisplay();
+                }
+            } catch {
+                totalCoins = 0;
+                updateCoinsDisplay();
+            }
+        }
+        function updateCoinsDisplay() {
+            totalCoinsDisplay.textContent = `Tổng Xu: ${totalCoins.toLocaleString()}`;
+        }
+
+        // === GAME LOGIC ===
+        function drawDuck(duck, x, y, baseSize) {
+            const bobbingSpeed = 5;
+            const bobbingAmplitude = 5;
+            const bobbingOffset = Math.sin(animationTimer * bobbingSpeed) * bobbingAmplitude;
+            ctx.save();
+            ctx.translate(x, y + bobbingOffset);
+            ctx.fillStyle = duck.color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, baseSize * 0.7, baseSize * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(baseSize * 0.4, -baseSize * 0.3, baseSize * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.moveTo(baseSize * 0.5, -baseSize * 0.3);
+            ctx.lineTo(baseSize * 0.7, -baseSize * 0.2);
+            ctx.lineTo(baseSize * 0.5, -baseSize * 0.1);
+            ctx.fill();
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(baseSize * 0.45, -baseSize * 0.35, baseSize * 0.05, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = `${baseSize * 0.8}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(duck.emoji, 0, 0);
+            if (duck.selected) {
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, baseSize * 0.8, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        function drawRaceTrack() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height * 0.4);
+            ctx.fillStyle = '#6EE7B7';
+            ctx.fillRect(0, canvas.height * 0.4, canvas.width, canvas.height * 0.6);
+            const grassAreaHeight = canvas.height * 0.6;
+            const totalLanesHeight = ducks.length * laneHeight;
+            const verticalPaddingInGrass = (grassAreaHeight - totalLanesHeight) / 2;
+            const startY = canvas.height * 0.4 + verticalPaddingInGrass;
+            const laneColors = ['#f5f5f5', '#e5e7eb', '#d1d5db', '#9ca3af'];
+            for (let i = 0; i < ducks.length; i++) {
+                const laneY = startY + i * laneHeight;
+                ctx.fillStyle = laneColors[i % laneColors.length];
+                ctx.fillRect(trackPadding, laneY, totalTrackLength, laneHeight);
+                if (i < ducks.length - 1) {
+                    ctx.strokeStyle = '#a1a1aa';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(trackPadding, laneY + laneHeight);
+                    ctx.lineTo(trackPadding + totalTrackLength, laneY + laneHeight);
+                    ctx.stroke();
+                }
+            }
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(trackPadding, startY);
+            ctx.lineTo(trackPadding, startY + ducks.length * laneHeight);
+            ctx.stroke();
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(trackPadding + totalTrackLength, startY);
+            ctx.lineTo(trackPadding + totalTrackLength, startY + ducks.length * laneHeight);
+            ctx.stroke();
+            ducks.forEach(duck => {
+                const duckX = trackPadding + duck.pathProgress;
+                const duckY = startY + duck.laneIndex * laneHeight + laneHeight / 2;
+                drawDuck(duck, duckX, duckY, duckSize);
+            });
+        }
+
+        function selectDuckButtonHandler(event) {
+            if (isRaceFinished) {
+                showMessageModal('Thông Báo', "Cần chọn 'Chơi Lại!' để đặt cược tiếp.", 'ℹ️', 2000);
+                return;
+            }
+            selectedDuckButtons.forEach(btn => {
+                btn.classList.remove('bg-blue-200', 'border-blue-500');
+            });
+            ducks.forEach(duck => duck.selected = false);
+            event.currentTarget.classList.add('bg-blue-200', 'border-blue-500');
+            selectedDuckId = event.currentTarget.dataset.duckId;
+            const chosenDuck = ducks.find(d => d.id === selectedDuckId);
+            if (chosenDuck) chosenDuck.selected = true;
+            setGameControlsBasedOnState();
+            drawRaceTrack();
+        }
+        function betButtonHandler(event) {
+            if (isRaceFinished) {
+                showMessageModal('Thông Báo', "Cần chọn 'Chơi Lại!' để đặt cược tiếp.", 'ℹ️', 2000);
+                return;
+            }
+            const newBet = parseInt(event.currentTarget.dataset.betAmount);
+            if (isNaN(newBet) || newBet <= 0) {
+                showMessageModal('Lỗi Đặt Cược!', 'Số tiền cược không hợp lệ! Vui lòng nhập số dương.', '⚠️', 2000);
+                return;
+            }
+            if (totalCoins < newBet) {
+                showMessageModal('Không đủ xu!', `Bạn không đủ ${newBet.toLocaleString()} xu để đặt cược!`, '💸', 2000);
+                return;
+            }
+            betButtons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            currentBet = newBet;
+            currentBetDisplay.textContent = `Cược: ${currentBet.toLocaleString()} Xu`;
+            setGameControlsBasedOnState();
+        }
+
+        function setGameControlsBasedOnState() {
+            startButton.disabled = isRaceInProgress || selectedDuckId === null || currentBet === 0 || totalCoins < currentBet || !userAddress;
+            selectedDuckButtons.forEach(btn => btn.disabled = isRaceInProgress || isRaceFinished || !userAddress);
+            betButtons.forEach(btn => btn.disabled = isRaceInProgress || isRaceFinished || !userAddress);
+        }
+
+        function initializeControls() {
+            selectedDuckButtons = Array.from(duckSelection.children);
+            betButtons = Array.from(betSelection.children);
+            selectedDuckButtons.forEach(btn => btn.addEventListener('click', selectDuckButtonHandler));
+            betButtons.forEach(btn => btn.addEventListener('click', betButtonHandler));
+            startButton.addEventListener('click', startButtonHandler);
+            document.getElementById('closeMessageModalBtn').addEventListener('click', hideMessageModal);
+            postRacePlayAgainButton.addEventListener('click', restartRace);
+            connectWalletBtn.addEventListener('click', connectWallet);
+            openDepositBtn.addEventListener('click', () => {
+                window.location.href = "http://127.0.0.1:5500/web-token-game/frontend/deposit.html";
+            });
+        }
+
+        function setupCanvasSize() {
+            let width = canvas.parentElement ? canvas.parentElement.offsetWidth : 700;
+            width = Math.max(width, 700);
+            canvas.width = width;
+            canvas.height = 250;
+            totalTrackLength = canvas.width - trackPadding * 2;
+        }
+        window.addEventListener('resize', () => {
+            setupCanvasSize();
+            drawRaceTrack();
+        });
+
+        function gameLoop() {
+            if (isRaceFinished) {
+                cancelAnimationFrame(animationFrameId);
+                return;
+            }
+            const now = Date.now();
+            const deltaTime = (now - startTime) / 1000;
+            startTime = now;
+            animationTimer += deltaTime;
+            ducks.forEach(duck => {
+                duck.pathProgress += duck.speed * deltaTime * 100;
+                duck.pathProgress = Math.min(duck.pathProgress, totalTrackLength);
+            });
+            let raceFinishedThisFrame = false, currentLeader = null, maxProgress = -1;
+            ducks.forEach(duck => {
+                if (duck.pathProgress > maxProgress) {
+                    maxProgress = duck.pathProgress;
+                    currentLeader = duck;
+                }
+                if (duck.pathProgress >= totalTrackLength) {
+                    raceFinishedThisFrame = true;
+                }
+            });
+            if (raceFinishedThisFrame && !isRaceFinished) {
+                isRaceFinished = true;
+                isRaceInProgress = false;
+                cancelAnimationFrame(animationFrameId);
+                winner = currentLeader;
+                if (winner) winner.isWinner = true;
+                finishRaceHandler(winner);
+            }
+            const progressPercentage = (maxProgress / totalTrackLength) * 100;
+            raceProgressBar.style.width = `${progressPercentage}%`;
+            raceProgressText.textContent = `${Math.round(progressPercentage)}%`;
+            drawRaceTrack();
+            if (!isRaceFinished) {
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        async function startButtonHandler() {
+            if (isRaceInProgress) return;
+            if (!userAddress) {
+                showMessageModal('Chưa kết nối ví!', 'Vui lòng kết nối ví để chơi.', '⚠️', 2000);
+                return;
+            }
+            if (!selectedDuckId) {
+                showMessageModal('Lỗi Đặt Cược!', 'Vui lòng chọn một con vịt để đặt cược.', '⚠️', 2000);
+                return;
+            }
+            if (currentBet <= 0) {
+                showMessageModal('Lỗi Đặt Cược!', 'Vui lòng đặt số tiền cược.', '⚠️', 2000);
+                return;
+            }
+            if (totalCoins < currentBet) {
+                showMessageModal('Không đủ xu!', `Bạn không đủ ${currentBet.toLocaleString()} xu để đặt cược!`, '💸', 2000);
+                return;
+            }
+            // Đặt cược qua backend
+            try {
+                const response = await fetch(`${BACKEND_URL}/play/bet`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ wallet: userAddress, betAmount: currentBet })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    showMessageModal('Lỗi đặt cược!', data.error || "Không thể đặt cược!", '⚠️', 2000);
+                    await refreshGameCoins();
+                    return;
+                }
+                await refreshGameCoins(); // Cập nhật lại số xu sau khi cược
+            } catch (e) {
+                showMessageModal('Lỗi đặt cược!', "Không kết nối được máy chủ!", '⚠️', 2000);
+                await refreshGameCoins();
+                return;
+            }
+            ducks.forEach(duck => {
+                duck.pathProgress = 0;
+                // Tốc độ trung bình 1.0, random mạnh ±0.4 (tức là mỗi vịt sẽ có speed từ 0.6 đến 1.4)
+                duck.speed = 1.0 + (Math.random() - 0.5) * 0.4;
+                duck.isWinner = false;
+            });
+            isRaceInProgress = true;
+            isRaceFinished = false;
+            startTime = Date.now();
+            hidePostRaceResultModal();
+            setGameControlsBasedOnState();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        async function finishRaceHandler(winner) {
+            let title = '', message = '', emoji = '';
+            if (winner && winner.id === selectedDuckId) {
+                // Thắng cuộc, gọi API /play/win
+                try {
+                    const response = await fetch(`${BACKEND_URL}/play/win`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ wallet: userAddress, winAmount: currentBet * 2 })
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.success) {
+                        title = 'Lỗi!';
+                        message = "Có lỗi khi cộng thưởng! Vui lòng F5 để đồng bộ lại số xu.";
+                        emoji = '⚠️';
+                    } else {
+                        title = 'Chúc Mừng!';
+                        message = `Vịt của bạn đã thắng! Bạn nhận được ${(currentBet * 2).toLocaleString()} Xu!`;
+                        emoji = '🎉';
+                    }
+                } catch {
+                    title = 'Lỗi!';
+                    message = "Có lỗi khi cộng thưởng! Vui lòng F5 để đồng bộ lại số xu.";
+                    emoji = '⚠️';
+                }
+                await refreshGameCoins();
+            } else {
+                title = 'Thua Cuộc!';
+                message = `Vịt của bạn đã thua. Vịt ${winner ? winner.emoji : 'không xác định'} là người chiến thắng.`;
+                emoji = '😞';
+                await refreshGameCoins();
+            }
+            showPostRaceResultModal(title, message, emoji);
+            drawRaceTrack();
+        }
+
+        function restartRace() {
+            hidePostRaceResultModal();
+            ducks.forEach(duck => {
+                duck.pathProgress = 0;
+                duck.speed = 0;
+                duck.isWinner = false;
+                duck.selected = false;
+            });
+            selectedDuckId = null;
+            currentBet = 0;
+            currentBetDisplay.textContent = `Cược: 0 Xu`; // Reset lại số xu cược sau khi chơi lại
+            isRaceInProgress = false;
+            isRaceFinished = false;
+            raceProgressBar.style.width = `0%`;
+            raceProgressText.textContent = `0%`;
+            selectedDuckButtons.forEach(btn => btn.classList.remove('bg-blue-200', 'border-blue-500'));
+            betButtons.forEach(btn => btn.classList.remove('active'));
+            setGameControlsBasedOnState();
+            drawRaceTrack();
+        }
+
+        // ==== KẾT NỐI VÍ ====
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                alert("Bạn cần cài MetaMask!");
+                return;
+            }
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (accounts.length > 0) {
+                    userAddress = accounts[0].toLowerCase();
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner(userAddress);
+                    await refreshGameCoins();
+                    setGameControlsBasedOnState();
+                }
+            } catch (e) {
+                alert("Lỗi khi kết nối ví: " + (e.message || e));
+            }
+        }
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', async (accounts) => {
+                if(accounts.length > 0){
+                    userAddress = accounts[0].toLowerCase();
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner(userAddress);
+                    await refreshGameCoins();
+                    setGameControlsBasedOnState();
+                } else {
+                    userAddress = null;
+                    totalCoins = 0;
+                    updateCoinsDisplay();
+                    setGameControlsBasedOnState();
+                }
+            });
+        }
+
+        // ==== KHỞI TẠO ====
+        function initializeGame() {
+            setupCanvasSize();
+            initializeControls();
+            updateCoinsDisplay();
+            currentBetDisplay.textContent = `Cược: 0 Xu`;
+            setGameControlsBasedOnState();
+            drawRaceTrack();
+            window.addEventListener('focus', async () => {
+                await refreshGameCoins();
+            });
+        }
+        document.addEventListener('DOMContentLoaded', async () => {
+            initializeGame();
+            if (window.ethereum) {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    userAddress = accounts[0].toLowerCase();
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner(userAddress);
+                    await refreshGameCoins();
+                    setGameControlsBasedOnState();
+                }
+            }
+        });
+
+        // ======= Controls =======
+        let selectedDuckButtons;
+        let betButtons;
+    </script>
+</body>
+</html>

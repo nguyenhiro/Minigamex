@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nạp/Rút Xu Game Đua Vịt Web3</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.0/dist/ethers.umd.min.js"></script>
+  <style>
+    body {font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh;}
+    .container {background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; width: 100%;}
+    h1, h2, h3 {color: #0056b3; text-align: center;}
+    .section {margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;}
+    button {background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; width: 100%;}
+    button:hover {background-color: #0056b3;}
+    button:disabled {background-color: #cccccc; cursor: not-allowed;}
+    input[type="text"], input[type="number"] {width: calc(100% - 22px); padding: 10px; margin-top: 5px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;}
+    .status-message {margin-top: 15px; padding: 10px; border-radius: 5px; background-color: #e2e3e5; color: #333;}
+    .status-message.success {background-color: #d4edda; color: #155724;}
+    .status-message.error {background-color: #f8d7da; color: #721c24;}
+    .info-line {margin-bottom: 10px;}
+    .info-label {font-weight: bold;}
+    .nav-buttons { display: flex; gap: 12px; justify-content: center; margin-bottom: 18px; }
+    .nav-buttons button { width: auto; min-width: 120px; margin: 0;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Nạp/Rút Xu Game Đua Vịt Web3</h1>
+    <div class="nav-buttons">
+      <button onclick="window.location.href='http://127.0.0.1:5500/web-token-game/index.html'" style="background:#10B981;">Quay lại Game</button>
+    </div>
+    <div class="section wallet-info">
+      <h2>Thông tin ví</h2>
+      <p class="info-line"><span class="info-label">Địa chỉ ví của bạn:</span> <span id="walletAddress">Chưa kết nối</span></p>
+      <p class="info-line"><span class="info-label">Số xu trong game:</span> <span id="duckCoinBalance">0</span></p>
+      <button id="connectWalletBtn" onclick="connectWallet()">Kết nối ví MetaMask</button>
+    </div>
+    <div class="section deposit-section">
+      <h2>Nạp Token MTT</h2>
+      <p>Số lượng MTT muốn nạp (Native Coin):</p>
+      <input type="number" id="amount" value="1" min="0.01" step="0.01">
+      <button id="sendTokenBtn" onclick="sendNativeCoin()">Gửi Native Coin MTT</button>
+      <div id="sendTokenStatus" class="status-message"></div>
+      <p style="margin-top:12px;"><b>Hoặc:</b> Sau khi chuyển thủ công, nhập Transaction Hash vào đây để xác nhận:</p>
+      <input type="text" id="transactionHash" placeholder="Nhập Transaction Hash">
+      <button id="confirmBtn" onclick="confirmManualDeposit()">Xác nhận nạp token</button>
+      <div id="depositStatus" class="status-message"></div>
+    </div>
+    <div class="section game-section">
+      <h3>Rút tiền</h3>
+      <p>Số lượng xu muốn rút (sẽ chuyển thành Native Coin MTT):</p>
+      <input type="number" id="withdrawAmount" value="1" min="0.01" step="0.01">
+      <button id="withdrawBtn" onclick="withdrawNativeCoin()">Rút tiền MTT</button>
+      <div id="withdrawStatus" class="status-message"></div>
+    </div>
+  </div>
+  <script>
+    const BACKEND_URL = "http://localhost:3000";
+    const RAW_GAME_WALLET_ADDRESS = "0xC5240a2eBFF7a44b9707D1fE8A593c9468bED571";
+    const NATIVE_COIN_DECIMALS = 18;
+
+    const connectWalletButton = document.getElementById('connectWalletBtn');
+    const walletAddressDisplay = document.getElementById('walletAddress');
+    const duckCoinBalanceDisplay = document.getElementById('duckCoinBalance');
+    const amountInput = document.getElementById('amount');
+    const sendTokenStatusMessage = document.getElementById('sendTokenStatus');
+    const transactionHashInput = document.getElementById('transactionHash');
+    const depositStatusMessage = document.getElementById('depositStatus');
+    const withdrawAmountInput = document.getElementById('withdrawAmount');
+    const withdrawStatusMessage = document.getElementById('withdrawStatus');
+
+    let provider = null;
+    let signer = null;
+    let userAddress = null;
+    let GAME_WALLET_CHECKSUM_ADDRESS = RAW_GAME_WALLET_ADDRESS;
+
+    // Lấy số xu backend
+    async function refreshBalance() {
+      if (!userAddress) {
+        duckCoinBalanceDisplay.innerText = "0";
+        return;
+      }
+      try {
+        const response = await fetch(`${BACKEND_URL}/balance/${userAddress}`);
+        if (response.ok) {
+          const data = await response.json();
+          duckCoinBalanceDisplay.innerText = data.coins;
+        } else {
+          duckCoinBalanceDisplay.innerText = "Lỗi";
+        }
+      } catch {
+        duckCoinBalanceDisplay.innerText = "Lỗi";
+      }
+    }
+
+    // Kết nối ví
+    async function connectWallet() {
+      if (typeof window.ethereum === 'undefined') {
+        alert("Bạn cần cài MetaMask!");
+        return;
+      }
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts.length > 0) {
+          userAddress = accounts[0].toLowerCase();
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          signer = provider.getSigner(userAddress);
+          walletAddressDisplay.innerText = userAddress;
+          connectWalletButton.innerText = "Đã kết nối";
+          connectWalletButton.disabled = true;
+          await refreshBalance();
+        }
+      } catch (e) {
+        alert("Lỗi khi kết nối ví: " + (e.message || e));
+      }
+    }
+
+    // Gửi Native Coin MTT
+    async function sendNativeCoin() {
+      if (!userAddress || !signer) {
+        alert("Vui lòng kết nối ví MetaMask trước!");
+        return;
+      }
+      const amount = amountInput.value.trim();
+      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        alert("Vui lòng nhập số lượng hợp lệ!");
+        return;
+      }
+      sendTokenStatusMessage.className = 'status-message';
+      sendTokenStatusMessage.innerText = 'Đang gửi... Vui lòng xác nhận trên MetaMask.';
+      try {
+        const amountWei = ethers.utils.parseUnits(amount, NATIVE_COIN_DECIMALS);
+        const tx = await signer.sendTransaction({to: GAME_WALLET_CHECKSUM_ADDRESS, value: amountWei});
+        sendTokenStatusMessage.innerText = `Đang chờ xác nhận giao dịch: ${tx.hash}`;
+        const receipt = await tx.wait();
+        if (receipt.status === 1) {
+          sendTokenStatusMessage.className = 'status-message success';
+          sendTokenStatusMessage.innerText = "Gửi thành công! Đang xác nhận với máy chủ...";
+          await confirmDepositWithBackend(receipt.transactionHash);
+        } else {
+          sendTokenStatusMessage.className = 'status-message error';
+          sendTokenStatusMessage.innerText = "Giao dịch thất bại!";
+        }
+      } catch (e) {
+        sendTokenStatusMessage.className = 'status-message error';
+        sendTokenStatusMessage.innerText = "Lỗi: " + (e.message || e);
+      }
+    }
+
+    // Gửi transaction hash xác nhận nạp thủ công
+    async function confirmManualDeposit() {
+      if (!userAddress) {
+        alert("Vui lòng kết nối ví MetaMask trước!");
+        return;
+      }
+      const txHash = transactionHashInput.value.trim();
+      if (!txHash) {
+        alert("Vui lòng nhập Transaction Hash!");
+        return;
+      }
+      await confirmDepositWithBackend(txHash);
+    }
+
+    // Xác nhận nạp token với backend
+    async function confirmDepositWithBackend(txHash) {
+      depositStatusMessage.className = 'status-message';
+      depositStatusMessage.innerText = "Đang xác nhận với máy chủ...";
+      try {
+        const response = await fetch(`${BACKEND_URL}/confirm`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({wallet: userAddress, txHash: txHash})
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            depositStatusMessage.className = 'status-message success';
+            depositStatusMessage.innerText = `Nạp thành công! Đã thêm ${data.coinsAdded} xu. Tổng xu: ${data.totalCoins}`;
+            transactionHashInput.value = '';
+            await refreshBalance();
+          } else {
+            depositStatusMessage.className = 'status-message error';
+            depositStatusMessage.innerText = "Xác nhận thất bại: " + (data.error || "Lỗi không xác định");
+          }
+        } else {
+          depositStatusMessage.className = 'status-message error';
+          depositStatusMessage.innerText = "Máy chủ trả về lỗi!";
+        }
+      } catch (e) {
+        depositStatusMessage.className = 'status-message error';
+        depositStatusMessage.innerText = "Lỗi hệ thống: " + (e.message || e);
+      }
+    }
+
+    // Rút tiền
+    async function withdrawNativeCoin() {
+      if (!userAddress) {
+        alert("Vui lòng kết nối ví!");
+        return;
+      }
+      const amount = withdrawAmountInput.value.trim();
+      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        alert("Vui lòng nhập số lượng hợp lệ!");
+        return;
+      }
+      withdrawStatusMessage.className = 'status-message';
+      withdrawStatusMessage.innerText = "Đang gửi yêu cầu rút...";
+      try {
+        const response = await fetch(`${BACKEND_URL}/withdraw`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({wallet: userAddress, amount: amount})
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            withdrawStatusMessage.className = 'status-message success';
+            withdrawStatusMessage.innerText = `Rút thành công! Đã rút ${data.coinsWithdrawn} xu. Tổng còn lại: ${data.totalCoins}`;
+            await refreshBalance();
+          } else {
+            withdrawStatusMessage.className = 'status-message error';
+            withdrawStatusMessage.innerText = "Rút thất bại: " + (data.error || "Lỗi không xác định");
+          }
+        } else {
+          withdrawStatusMessage.className = 'status-message error';
+          withdrawStatusMessage.innerText = "Máy chủ trả về lỗi!";
+        }
+      } catch (e) {
+        withdrawStatusMessage.className = 'status-message error';
+        withdrawStatusMessage.innerText = "Lỗi hệ thống: " + (e.message || e);
+      }
+    }
+
+    // Đồng bộ số xu khi chuyển tab/trang (chỉ cho TRANG THANH TOÁN, không liên kết sang trang game)
+    window.addEventListener('focus', refreshBalance);
+
+    // Auto connect nếu đã có tài khoản trước đó
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (typeof ethers !== 'undefined' && typeof ethers.utils !== 'undefined') {
+        try {
+          GAME_WALLET_CHECKSUM_ADDRESS = ethers.utils.getAddress(RAW_GAME_WALLET_ADDRESS);
+        } catch(e) {
+          GAME_WALLET_CHECKSUM_ADDRESS = RAW_GAME_WALLET_ADDRESS;
+        }
+      }
+      if (window.ethereum) {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          userAddress = accounts[0].toLowerCase();
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          signer = provider.getSigner(userAddress);
+          walletAddressDisplay.innerText = userAddress;
+          connectWalletButton.innerText = "Đã kết nối";
+          connectWalletButton.disabled = true;
+          await refreshBalance();
+        }
+      }
+      if(window.ethereum){
+        window.ethereum.on('accountsChanged', async (accounts) => {
+          if(accounts.length > 0){
+            userAddress = accounts[0].toLowerCase();
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            signer = provider.getSigner(userAddress);
+            walletAddressDisplay.innerText = userAddress;
+            connectWalletButton.innerText = "Đã kết nối";
+            connectWalletButton.disabled = true;
+            await refreshBalance();
+          } else {
+            userAddress = null;
+            walletAddressDisplay.innerText = "Chưa kết nối";
+            connectWalletButton.innerText = "Kết nối ví MetaMask";
+            connectWalletButton.disabled = false;
+            duckCoinBalanceDisplay.innerText = "0";
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
