@@ -5,6 +5,7 @@
   <title>Trang Chủ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    /* ... giữ nguyên CSS ... */
     body {
       margin: 0;
       background: #111215;
@@ -15,114 +16,20 @@
       display: flex;
       min-height: 100vh;
     }
-    /* Sidebar */
-    .sidebar {
-      width: 240px;
-      background: #18191c;
-      display: flex;
-      flex-direction: column;
-      padding-top: 32px;
-      gap: 8px;
-      border-right: 1px solid #222;
-    }
-    .sidebar-btn {
-      background: none;
-      border: none;
-      color: #d1d5db;
-      text-align: left;
-      padding: 12px 28px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background .2s, color .2s;
-    }
-    .sidebar-btn:hover, .sidebar-btn.active {
-      background: #28292e;
-      color: #fff;
-    }
-    /* Main */
-    .main-content {
-      flex: 1;
-      padding: 32px;
-      min-width: 0;
-    }
-    .room-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 28px;
-      margin-top: 18px;
-    }
-    .room-card {
-      background: #191a1f;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,.2);
-      display: flex;
-      flex-direction: column;
-      transition: box-shadow .2s, transform .2s;
-      position: relative;
-    }
-    .room-card:hover {
-      transform: translateY(-3px) scale(1.01);
-      box-shadow: 0 8px 24px rgba(0,0,0,.28);
-    }
-    .room-banner {
-      height: 120px;
-      background: #303136;
-      background-size: cover;
-      background-position: center;
-      display: flex;
-      align-items: flex-end;
-      justify-content: flex-end;
-      padding: 8px;
-    }
-    .room-number {
-      position: absolute;
-      top: 10px;
-      left: 12px;
-      background: #22283e;
-      color: #13f2fd;
-      padding: 4px 13px;
-      border-radius: 12px;
-      font-weight: bold;
-      font-size: 14px;
-      letter-spacing: 1.5px;
-    }
-    .room-info {
-      padding: 16px 18px 14px 18px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .room-title {
-      font-weight: 600;
-      font-size: 18px;
-      margin: 0;
-      color: #fff;
-    }
-    .room-link {
-      color: #3beade;
-      text-decoration: none;
-      font-size: 15px;
-      font-weight: 500;
-      margin-top: 6px;
-      margin-bottom: 6px;
-      transition: color .2s;
-    }
-    .room-link:hover {
-      color: #10b981;
-      text-decoration: underline;
-    }
-    .room-clicks {
-      font-size: 14px;
-      color: #8fd6c0;
-      background: #181f1a;
-      border-radius: 8px;
-      padding: 4px 10px;
-      display: inline-block;
-      margin-top: 4px;
-    }
+    .sidebar { /* ... */ }
+    .sidebar-btn { /* ... */ }
+    .sidebar-btn:hover, .sidebar-btn.active { /* ... */ }
+    .main-content { /* ... */ }
+    .room-grid { /* ... */ }
+    .room-card { /* ... */ }
+    .room-card:hover { /* ... */ }
+    .room-banner { /* ... */ }
+    .room-number { /* ... */ }
+    .room-info { /* ... */ }
+    .room-title { /* ... */ }
+    .room-link { /* ... */ }
+    .room-link:hover { /* ... */ }
+    .room-clicks { /* ... */ }
     @media (max-width: 900px) {
       .container { flex-direction: column;}
       .sidebar { flex-direction: row; width: 100%; border-right:none; border-bottom:1px solid #222;}
@@ -250,7 +157,8 @@
       </div>
     </main>
   </div>
-  <!-- JS lấy và tăng số click từ backend -->
+  <!-- JS lấy và tăng số click từ backend + realtime socket.io -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     // Danh sách tên phòng tương ứng với backend
     const roomKeys = [
@@ -285,6 +193,15 @@
             if (el) el.textContent = (data.count || 0).toLocaleString();
           });
         // (Không ngăn mở trang, backend sẽ ghi nhận click)
+      });
+    });
+
+    // --- SOCKET.IO REALTIME ---
+    const socket = io();
+    socket.on('updateClicks', function(clicks) {
+      roomKeys.forEach(room => {
+        const el = document.getElementById(`clicks-${room}`);
+        if (el) el.textContent = (clicks[room] || 0).toLocaleString();
       });
     });
   </script>
