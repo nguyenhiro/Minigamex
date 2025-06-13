@@ -64,9 +64,11 @@
       const from = getQueryParam('from');
       if (from === 'xingau') {
         window.location.href = "https://nguyenhiro.github.io/Minigamex/xingau.html";
-      } else if (from === 'gameduavit' || from === 'gameduavit') {
+      } else if (from === 'duck' || from === 'gameduavit') {
         window.location.href = "https://nguyenhiro.github.io/Minigamex/gameduavit.html";
-      } 
+      } else {
+        window.location.href = "https://nguyenhiro.github.io/Minigamex/";
+      }
     };
 
     const BACKEND_URL = "http://localhost:3000";
