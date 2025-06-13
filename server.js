@@ -10,8 +10,6 @@ app.use(cors({
     origin: 'http://127.0.0.1:5500'
 }));
 app.use(express.json());
-
-// Cho phép phục vụ các file tĩnh (HTML, CSS, JS...) trong cùng thư mục
 app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
@@ -32,6 +30,15 @@ const file = './db.json';
 const adapter = new JSONFile(file);
 const db = new Low(adapter, { users: {}, processedTxs: {} });
 
+// ----------- SOCKET.IO SETUP -----------
+const http = require("http").createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(http, {
+    cors: { origin: "http://127.0.0.1:5500" }
+});
+app.set('io', io);
+
+// ----------- KHỞI TẠO APP -------------
 let provider;
 let gameWallet;
 
@@ -44,7 +51,7 @@ async function initializeApp() {
         gameWallet = new Wallet(GAME_WALLET_PRIVATE_KEY, provider);
         console.log(`[Backend] Wallet game khởi tạo với địa chỉ: ${gameWallet.address}`);
 
-        app.listen(PORT, () => {
+        http.listen(PORT, () => {
             console.log(`[Backend] Server đang chạy trên cổng ${PORT}`);
             console.log(`[Backend] Kết nối với RPC: ${RPC_URL}`);
             console.log(`[Backend] Địa chỉ ví game: ${GAME_WALLET_ADDRESS}`);
@@ -59,8 +66,14 @@ async function initializeApp() {
 
 initializeApp();
 
+// ----------- SOCKET.IO EVENTS ----------
+io.on('connection', (socket) => {
+    console.log('A client connected');
+    // Gửi số click lần đầu cho client luôn (tùy chọn)
+    socket.emit('updateClicks', getClicks());
+});
 
-// --- ROUTES ---
+// --------------- ROUTES GAME ---------------
 
 // Lấy số xu cho ví người dùng
 app.get("/balance/:wallet", async (req, res) => {
@@ -79,7 +92,6 @@ app.get("/balance/:wallet", async (req, res) => {
         res.status(500).json({ success: false, error: "Lỗi nội bộ máy chủ khi lấy số dư.", details: error.message });
     }
 });
-
 
 // Xác nhận nạp xu bằng giao dịch blockchain
 app.post("/confirm", async (req, res) => {
@@ -231,8 +243,6 @@ app.post("/withdraw", async (req, res) => {
     }
 });
 
-// --- ROUTES GAME ---
-
 // Đặt cược
 app.post("/play/bet", async (req, res) => {
     const { wallet, betAmount } = req.body;
@@ -312,7 +322,7 @@ app.get('/api/clicks', (req, res) => {
     res.json(getClicks());
 });
 
-// API: Tăng số click của 1 phòng
+// API: Tăng số click của 1 phòng (Realtime cập nhật cho tất cả client)
 app.post('/api/clicks/:room', (req, res) => {
     let clicks = getClicks();
     const room = req.params.room;
@@ -320,4 +330,7 @@ app.post('/api/clicks/:room', (req, res) => {
     clicks[room]++;
     saveClicks(clicks);
     res.json({ count: clicks[room] });
+
+    // Gửi realtime tới tất cả client
+    io.emit('updateClicks', clicks);
 });
