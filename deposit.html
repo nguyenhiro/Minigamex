@@ -55,21 +55,26 @@
     </div>
   </div>
   <script>
-    // Xử lý nút quay lại về đúng game dựa vào ?from=...
-    document.getElementById('backBtn').onclick = function() {
-      function getQueryParam(name) {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get(name);
-      }
-      const from = getQueryParam('from');
-      if (from === 'xingau') {
-        window.location.href = "https://nguyenhiro.github.io/Minigamex/xingau.html";
-      } else if (from === 'duck' || from === 'gameduavit') {
-        window.location.href = "https://nguyenhiro.github.io/Minigamex/gameduavit.html";
-      } else {
-        window.location.href = "https://nguyenhiro.github.io/Minigamex/";
-      }
-    };
+    // Hàm lấy query param an toàn
+    function getQueryParam(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
+
+    // Gán sự kiện khi DOM đã sẵn sàng
+    document.addEventListener('DOMContentLoaded', function () {
+      // Xử lý nút quay lại về đúng game dựa vào ?from=...
+      document.getElementById('backBtn').onclick = function() {
+        const from = getQueryParam('from');
+        if (from === 'xingau') {
+          window.location.href = "https://nguyenhiro.github.io/Minigamex/xingau.html";
+        } else if (from === 'duck' || from === 'gameduavit') {
+          window.location.href = "https://nguyenhiro.github.io/Minigamex/gameduavit.html";
+        } else {
+          window.location.href = "https://nguyenhiro.github.io/Minigamex/";
+        }
+      };
+    });
 
     const BACKEND_URL = "http://localhost:3000";
     const RAW_GAME_WALLET_ADDRESS = "0xC5240a2eBFF7a44b9707D1fE8A593c9468bED571";
