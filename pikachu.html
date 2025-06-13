@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Pikachu (Version 1.0.2)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Ngăn thanh cuộn của body */
+            background-color: #87ceeb;
+            background-image: url('body.jpg'); /* Đường dẫn đến ảnh nền bạn muốn */
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center center;
+            
+            display: grid;
+            grid-template-areas: 
+                "game-area"
+                "controls-area"; /* Mặc định mobile dọc: controls nằm dưới game */
+            grid-template-rows: 1fr auto; 
+            grid-template-columns: 1fr;
+            
+            justify-items: center; 
+            align-items: center;   
+            
+            min-height: 100vh;
+            width: 100vw; 
+            box-sizing: border-box; 
+            -webkit-overflow-scrolling: touch;
+            touch-action: manipulation; 
+            font-family: 'Roboto', sans-serif;
+            color: white;
+        }
+
+        #game-container {
+            grid-area: game-area; 
+            width: 1280px; /* Kích thước tham chiếu */
+            height: 720px; /* Kích thước tham chiếu */
+            border: 5px solid #333;
+            background-color: #aaddff;
+            position: relative; 
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transform-origin: center center; 
+            transform: scale(1); 
+            transition: transform 0.1s ease-out; 
+            
+            max-width: 99vw; 
+            max-height: 99vh; 
+        }
+
+        #game-world {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 2500px; /* Chiều rộng thế giới game */
+            height: 100%;
+            /* ĐÃ BỎ TRANSITION ĐỂ CAMERA VÀ VẬT THỂ DI CHUYỂN MƯỢT HƠN */
+            /* transition: transform 0.1s linear; */ 
+            background-image: url('game.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center bottom;
+        }
+
+        #player {
+            width: 60px;
+            height: 60px;
+            background-image: url('https://www.pngall.com/wp-content/uploads/5/Pokemon-Pikachu-PNG-High-Quality-Image.png');
+            background-size: contain;
+            background-position: center bottom;
+            background-repeat: no-repeat;
+            position: absolute;
+            image-rendering: pixelated;
+            z-index: 10;
+            transition: transform 0.1s ease-out; 
+        }
+
+        #player.flipped {
+            transform: scaleX(-1);
+        }
+
+        .platform {
+            background-image: url('dat2.png');
+            background-size: cover;
+            background-repeat: repeat-x;
+            position: absolute;
+            height: 50px;
+            z-index: 5;
+        }
+
+        .obstacle, .hazard, .moving-obstacle {
+            background-color: #8B4513;
+            position: absolute;
+            background-image: url('khucgo.jpg');
+            background-size: cover;
+            background-repeat: repeat-x;
+            border: 2px solid #555;
+            z-index: 6;
+        }
+        .hazard {
+            background-color: #ffffff;
+            border: 2px solid #8B0000;
+            background-image: url('lua4-1.png');
+            background-size: cover;
+            background-repeat: repeat-x;
+            border: none;
+            z-index: 6;
+        }
+        .moving-obstacle {
+            background-color: #56e6ff;
+            border: 2px solid #333;
+            background-image: url('may1-1.png');
+            background-size: cover;
+            background-repeat: repeat-x;
+            z-index: 6;
+        }
+
+        #finish-line {
+            width: 30px;
+            height: 120px;
+            background-color: rgb(92, 51, 4);
+            position: absolute;
+            background-image: url('cua-cong-2.png');
+            background-size: cover;
+            background-repeat: repeat-x;
+            border: 2px dashed #000;
+            z-index: 7;
+        }
+
+        #time-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-family: 'Roboto', sans-serif;
+            font-weight: bold;
+            font-size: 1.2em; 
+            color: white;
+            text-shadow: 2px 2px 3px black;
+            z-index: 20;
+            pointer-events: none; 
+        }
+
+        #game-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px 60px;
+            border-radius: 15px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 2.2em;
+            display: none;
+            z-index: 100;
+            text-align: center;
+            border: 3px solid #ffcc00;
+            text-shadow: 2px 2px 5px black;
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.6);
+            width: 80%; 
+            max-width: 600px;
+            box-sizing: border-box;
+            pointer-events: auto; 
+        }
+        #game-message p {
+            margin-bottom: 1.5vw;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        #game-message ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 1vw;
+            max-height: 10vh; 
+            overflow-y: auto;
+            border-top: 1px dashed rgba(255,255,255,0.3);
+            padding-top: 1vw;
+        }
+        #game-message li {
+            margin-bottom: 0.3vw;
+        }
+
+        #reset-button {
+            margin-top: 2vw;
+            padding: 1vw 2vw; 
+            font-size: 1.2em; 
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.2s, transform 0.2s;
+            font-family: 'Roboto', sans-serif;
+            pointer-events: auto; 
+        }
+        #reset-button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        /* Mobile Controls (Portrait/Default) */
+        #mobile-controls {
+            grid-area: controls-area; 
+            width: 100%; 
+            max-width: 900px; 
+            padding: 10px; 
+            display: flex;
+            justify-content: space-around; 
+            align-items: center;
+            z-index: 1000;
+            background-color: transparent; 
+            border-radius: 15px;
+            opacity: 0.9; 
+            box-sizing: border-box;
+            gap: 15px; 
+            pointer-events: auto;
+            display: none; 
+        }
+        .control-group {
+            display: flex;
+            gap: 25px; 
+        }
+        .control-button {
+            width: 15vw; 
+            height: 15vw; 
+            max-width: 80px; 
+            max-height: 80px; 
+            min-width: 60px; 
+            min-height: 60px; 
+            
+            background-color: rgba(0, 123, 255, 0.7); 
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 6vw; 
+            max-font-size: 35px; 
+            min-font-size: 28px; 
+
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+            transition: background-color 0.2s, transform 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .control-button:active {
+            background-color: rgba(0, 86, 179, 0.7); 
+            transform: scale(0.9); 
+        }
+
+        /* Mobile Controls (Landscape) - TỐI ƯU VỊ TRÍ NÚT */
+        #left-controls-area {
+            grid-area: controls-left;
+            display: none; 
+            flex-direction: column;
+            justify-content: center; /* Căn giữa theo chiều dọc */
+            align-items: center;     /* Căn giữa theo chiều ngang */
+            gap: 15px;
+            background-color: transparent; 
+            height: 100%;
+            box-sizing: border-box;
+            /* Thêm padding để đẩy các nút vào bên trong khỏi mép màn hình */
+            padding-left: 10px; 
+        }
+        #right-controls-area {
+            grid-area: controls-right;
+            display: none; 
+            flex-direction: column;
+            justify-content: center; /* Căn giữa theo chiều dọc */
+            align-items: center;     /* Căn giữa theo chiều ngang */
+            gap: 15px; 
+            background-color: transparent; 
+            height: 100%;
+            box-sizing: border-box;
+            /* Thêm padding để đẩy các nút vào bên trong khỏi mép màn hình */
+            padding-right: 10px; 
+        }
+
+        /* CSS cho phần hướng dẫn */
+        #game-instructions {
+            position: absolute;
+            top: 20px; /* Điều chỉnh vị trí từ trên xuống */
+            left: 20px; /* Điều chỉnh vị trí từ trái sang */
+            background-color: rgba(0, 0, 0, 0.7); /* Nền tối trong suốt */
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.9em; /* Kích thước chữ */
+            z-index: 50; /* Đảm bảo nằm trên các yếu tố game nhưng dưới game message */
+            display: block; /* Mặc định hiển thị */
+            transition: opacity 0.5s ease-out; /* Hiệu ứng mờ dần */
+            pointer-events: none; /* Quan trọng: Không chặn click/touch vào game */
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 2px black;
+        }
+
+        #game-instructions p {
+            margin: 5px 0;
+            line-height: 1.4;
+        }
+
+
+        /* MEDIA QUERIES để tối ưu bố cục và kích thước */
+
+        /* Mobile dọc (portrait) */
+        @media (orientation: portrait) {
+            body {
+                grid-template-areas: 
+                    "game-area"
+                    "controls-area";
+                grid-template-rows: 1fr auto;
+                grid-template-columns: 1fr;
+            }
+            #game-container {
+                max-width: 95vw;
+                max-height: 70vh; 
+            }
+            #mobile-controls {
+                width: 90%; 
+                max-width: 500px;
+                margin-top: 15px; 
+            }
+            .control-button {
+                width: 15vw; 
+                height: 15vw;
+                min-width: 55px; 
+                min-height: 55px; 
+                font-size: 5vw; 
+                min-font-size: 26px; 
+            }
+            /* ĐIỀU CHỈNH KÍCH THƯỚC THÔNG BÁO KẾT THÚC GAME CHO PORTRAIT */
+            #game-message {
+                padding: 8px; 
+                font-size: 0.9em; 
+            }
+            #game-message p {
+                font-size: 0.6em; 
+                margin-bottom: 1vw; 
+            }
+            #game-message ul {
+                font-size: 0.45em; 
+                max-height: 8vh; 
+                padding-top: 0.8vw; 
+            }
+            #reset-button {
+                font-size: 0.9em; 
+                padding: 0.8vw 1.5vw; 
+            }
+            #game-instructions {
+                top: 10px;
+                left: 10px;
+                font-size: 0.7em; /* Nhỏ hơn trên mobile */
+                padding: 8px 12px;
+            }
+        }
+
+        /* Mobile ngang (landscape) và Tablet */
+        @media (orientation: landscape) and (max-width: 999px) {
+            body {
+                grid-template-areas: 
+                    "controls-left game-area controls-right";
+                /* Tối ưu hóa grid columns để căn chỉnh nút */
+                /* Sử dụng minmax để các cột controls có chiều rộng tối thiểu và linh hoạt */
+                grid-template-columns: minmax(60px, 1fr) 4fr minmax(60px, 1fr); 
+                grid-template-rows: 1fr; 
+            }
+            #game-container {
+                max-width: 80vw; 
+                max-height: 98vh; 
+            }
+            #mobile-controls {
+                display: none !important; 
+            }
+            #left-controls-area {
+                display: flex; 
+            }
+            #right-controls-area {
+                display: flex; 
+            }
+            .control-button {
+                width: 10vw; 
+                height: 10vw;
+                max-width: 70px;
+                max-height: 70px;
+                min-width: 50px;
+                min-height: 50px;
+                font-size: 4vw;
+                max-font-size: 28px;
+                min-font-size: 20px;
+            }
+            /* ĐIỀU CHỈNH KÍCH THƯỚC THÔNG BÁO KẾT THÚC GAME CHO LANDSCAPE */
+            #game-message {
+                padding: 12px; 
+                font-size: 1.2em; 
+            }
+            #game-message p {
+                    font-size: 0.7em; 
+                    margin-bottom: 0.8vw;
+                }
+            #game-message ul {
+                font-size: 0.55em; 
+                max-height: 9vh;
+                padding-top: 0.7vw;
+            }
+            #reset-button {
+                font-size: 1.0em; 
+                padding: 0.9vw 1.8vw;
+            }
+            #game-instructions {
+                top: 10px;
+                left: 10px;
+                font-size: 0.7em; /* Nhỏ hơn trên mobile */
+                padding: 8px 12px;
+            }
+        }
+
+
+        /* Cho màn hình lớn (PC) */
+        @media (min-width: 1000px) {
+            body {
+                grid-template-areas: "game-area"; 
+                grid-template-rows: 1fr;
+                grid-template-columns: 1fr;
+            }
+            #time-display {
+                font-size: 1.3em;
+                top: 15px;
+                left: 15px;
+            }
+            #game-message {
+                padding: 40px; 
+                font-size: 2.2em; 
+            }
+            #mobile-controls, #left-controls-area, #right-controls-area {
+                display: none !important; 
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="game-world">
+            <div id="player"></div>
+            <div id="finish-line"></div>
+            <div id="game-instructions">
+                <p><strong>Hướng dẫn:</strong></p>
+                <p>←/A: Di chuyển trái</p>
+                <p>→/D: Di chuyển phải</p>
+                <p>↑/Space: Nhảy</p>
+                <p>Đi đến Cổng để thắng!</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="time-display">Thời gian: 00:00</div>
+    <div id="game-message">
+        <p>Bạn đã chiến thắng!</p>
+        <button id="reset-button">Chơi Lại</button>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="control-group">
+            <button class="control-button" id="left-button">←</button>
+            <button class="control-button" id="right-button">→</button>
+        </div>
+        <button class="control-button" id="jump-button">↑</button>
+    </div>
+
+    <div id="left-controls-area">
+        <button class="control-button" id="left-button-landscape">←</button>
+        <button class="control-button" id="right-button-landscape">→</button>
+    </div>
+    <div id="right-controls-area">
+        <button class="control-button" id="jump-button-landscape">↑</button>
+    </div>
+
+    <script>
+        const player = document.getElementById('player');
+        const gameContainer = document.getElementById('game-container');
+        const gameWorld = document.getElementById('game-world');
+        let finishLine = document.getElementById('finish-line'); // Đổi sang let để có thể cập nhật
+        const gameMessage = document.getElementById('game-message');
+        const timeDisplay = document.getElementById('time-display');
+        const gameInstructions = document.getElementById('game-instructions'); // Lấy element hướng dẫn
+
+        // Mobile Controls elements (portrait/default)
+        const leftButton = document.getElementById('left-button');
+        const rightButton = document.getElementById('right-button');
+        const jumpButton = document.getElementById('jump-button');
+
+        // Mobile Controls elements (landscape)
+        const leftButtonLandscape = document.getElementById('left-button-landscape');
+        const rightButtonLandscape = document.getElementById('right-button-landscape');
+        const jumpButtonLandscape = document.getElementById('jump-button-landscape');
+
+        let startTime = 0;
+        let elapsedTime = 0;
+        let timerInterval;
+
+        let winHistory = JSON.parse(localStorage.getItem('gameWinHistory')) || [];
+
+        let playerX = 50;
+        let playerY = 0;
+        const playerBaseWidth = 60;
+        const playerBaseHeight = 60;
+        let playerActualWidth = playerBaseWidth;
+        let playerActualHeight = playerBaseHeight;
+
+        const hitboxXOffset = 10; 
+        const hitboxYOffset = 5; 
+
+        const deathFallThreshold = -100; 
+
+        let isJumping = false;
+        let isMovingLeft = false;
+        let isMovingRight = false;
+        let isGameOver = false;
+        let isOnPlatform = false; 
+
+        const moveAcceleration = 1.2;
+        const friction = 0.8;
+        const maxSpeed = 6;
+        const jumpStrength = 14;
+        const gravity = 0.6;
+        let xVelocity = 0;
+        let yVelocity = 0;
+
+        let cameraX = 0;
+        let facingRight = true;
+
+        let lastFrameTime = 0;
+        const targetFPS = 60; // Dùng để chuẩn hóa tốc độ dựa trên delta time
+
+        let gameElements = [];
+        let movingObstacles = [];
+
+        // Kích thước game gốc (reference size)
+        const gameBaseWidth = 1280;
+        const gameBaseHeight = 720;
+        const gameAspectRatio = gameBaseWidth / gameBaseHeight; 
+
+        // --- CÁC GIỚI HẠN SCALE ---
+        const minGameScale = 0.8; 
+        const maxGameScale = 1.6; 
+
+        // BIẾN MỚI: Kích thước hiển thị thực tế của game container sau khi scaling
+        let currentEffectiveGameWidth = gameBaseWidth;
+        let currentEffectiveGameHeight = gameBaseHeight;
+
+        // BIẾN MỚI: Độ mượt của camera
+        const CAMERA_SMOOTHNESS = 0.08; 
+        
+        // BIẾN MỚI: Vị trí trên màn hình mà nhân vật sẽ được "neo" khi camera cuộn
+        const playerAnchorXOnScreen = gameBaseWidth * 0.25; 
+
+        // --- Cấu trúc Level (đã thêm level2) ---
+        const gameLevels = {
+            level1: {
+                worldWidth: 6000, 
+                initialPlayerX: 50,
+                initialPlayerY: 50, // Hoặc tính toán lại dựa trên bottom của platform đầu tiên
+                finishLine: { left: 4950, bottom: 50, width: 30, height: 120 }, 
+                elements: [
+                    { type: 'platform', left: 0, width: 200, height: 50, bottom: 0 },
+                    { type: 'platform', left: 300, width: 100, height: 50, bottom: 0 },
+                    { type: 'platform', left: 500, width: 150, height: 50, bottom: 0 },
+                    { type: 'platform', left: 750, width: 120, height: 50, bottom: 80 },
+                    { type: 'platform', left: 950, width: 100, height: 50, bottom: 0 },
+                    { type: 'platform', left: 1150, width: 180, height: 50, bottom: 0 },
+                    { type: 'platform', left: 1400, width: 100, height: 50, bottom: 120 },
+                    { type: 'platform', left: 1600, width: 150, height: 50, bottom: 0 },
+                    { type: 'platform', left: 1850, width: 150, height: 50, bottom: 0 },
+                    { type: 'platform', left: 2100, width: 200, height: 50, bottom: 0 },
+                    { type: 'platform', left: 2400, width: 100, height: 50, bottom: 0 },
+
+                    { type: 'obstacle', left: 150, width: 50, height: 30, bottom: 50 },
+                    { type: 'obstacle', left: 550, width: 70, height: 60, bottom: 50 },
+                    { type: 'obstacle', left: 800, width: 50, height: 30, bottom: 130 },
+                    { type: 'obstacle', left: 1450, width: 50, height: 40, bottom: 170 },
+                    { type: 'obstacle', left: 1650, width: 80, height: 70, bottom: 50 },
+                    { type: 'obstacle', left: 2200, width: 50, height: 50, bottom: 50 },
+
+                    { type: 'hazard', left: 350, width: 30, height: 15, bottom: 50 },
+                    { type: 'hazard', left: 1000, width: 60, height: 15, bottom: 50 },
+                    { type: 'hazard', left: 1950, width: 40, height: 20, bottom: 50 },
+
+                    { type: 'moving-obstacle', left: 600, width: 60, height: 40, bottom: 100, range: 100, speed: 1.5 },
+                    { type: 'moving-obstacle', left: 1250, width: 80, height: 50, bottom: 50, range: 150, speed: 1.2 },
+                    { type: 'moving-obstacle', left: 1700, width: 50, height: 30, bottom: 100, range: 80, speed: 2 },
+                    
+                    // --- THÊM CÁC ELEMENTS MỚI CHO PHẦN BẢN ĐỒ DÀI HƠN ---
+                    { type: 'platform', left: 2500, width: 100, height: 50, bottom: 0 },
+                    { type: 'obstacle', left: 2650, width: 60, height: 50, bottom: 50 },
+                    { type: 'platform', left: 2800, width: 150, height: 50, bottom: 0 },
+                    { type: 'hazard', left: 2900, width: 30, height: 60, bottom: 50 },
+                    { type: 'platform', left: 3000, width: 200, height: 50, bottom: 80 },
+                    { type: 'moving-obstacle', left: 3200, width: 170, height: 45, bottom: 130, range: 100, speed: 1.7 },
+                    { type: 'platform', left: 3400, width: 180, height: 50, bottom: 0 },
+                    { type: 'platform', left: 3600, width: 150, height: 50, bottom: 0 },
+                    { type: 'obstacle', left: 3800, width: 70, height: 60, bottom: 50 },
+                    { type: 'hazard', left: 3850, width: 40, height: 70, bottom: 50 },
+                    { type: 'platform', left: 4000, width: 100, height: 50, bottom: 100 },
+                    { type: 'moving-obstacle', left: 4200, width: 160, height: 30, bottom: 50, range: 100, speed: 2.1 },
+                    { type: 'platform', left: 4400, width: 150, height: 50, bottom: 0 },
+                    { type: 'obstacle', left: 4650, width: 80, height: 50, bottom: 50 },
+                    { type: 'platform', left: 4800, width: 180, height: 50, bottom: 0 }
+                ]
+            },
+            level2: {
+                worldWidth: 7000, // Level 2 có thể dài hơn
+                initialPlayerX: 50,
+                initialPlayerY: 50, 
+                finishLine: { left: 5900, bottom: 50, width: 30, height: 120 },
+                elements: [
+                    { type: 'platform', left: 0, width: 250, height: 50, bottom: 0 },
+                    { type: 'hazard', left: 300, width: 60, height: 25, bottom: 50 },
+                    { type: 'platform', left: 450, width: 150, height: 50, bottom: 0 },
+                    { type: 'moving-obstacle', left: 700, width: 80, height: 50, bottom: 100, range: 180, speed: 1.5 },
+                    { type: 'platform', left: 900, width: 120, height: 50, bottom: 120 },
+                    { type: 'obstacle', left: 1100, width: 70, height: 60, bottom: 50 },
+                    { type: 'platform', left: 1300, width: 200, height: 50, bottom: 0 },
+                    { type: 'hazard', left: 1550, width: 40, height: 20, bottom: 50 },
+                    { type: 'platform', left: 1700, width: 180, height: 50, bottom: 0 },
+                    { type: 'moving-obstacle', left: 1950, width: 70, height: 45, bottom: 130, range: 150, speed: 1.7 },
+                    { type: 'platform', left: 2200, width: 100, height: 50, bottom: 0 },
+                    { type: 'obstacle', left: 2350, width: 90, height: 70, bottom: 50 },
+                    { type: 'platform', left: 2550, width: 150, height: 50, bottom: 0 },
+                    { type: 'hazard', left: 2750, width: 50, height: 20, bottom: 50 },
+                    { type: 'platform', left: 2900, width: 220, height: 50, bottom: 80 },
+                    { type: 'moving-obstacle', left: 3150, width: 60, height: 30, bottom: 50, range: 120, speed: 2.1 },
+                    { type: 'platform', left: 3400, width: 180, height: 50, bottom: 0 },
+                    { type: 'obstacle', left: 3600, width: 80, height: 60, bottom: 50 },
+                    { type: 'platform', left: 3800, width: 120, height: 50, bottom: 0 },
+                    { type: 'hazard', left: 3950, width: 30, height: 15, bottom: 50 },
+                    { type: 'platform', left: 4100, width: 200, height: 50, bottom: 100 },
+                    { type: 'moving-obstacle', left: 4350, width: 75, height: 40, bottom: 150, range: 100, speed: 1.9 },
+                    { type: 'platform', left: 4600, width: 250, height: 50, bottom: 0 },
+                    { type: 'obstacle', left: 4850, width: 60, height: 50, bottom: 50 },
+                    { type: 'platform', left: 5050, width: 150, height: 50, bottom: 0 },
+                    { type: 'hazard', left: 5250, width: 40, height: 20, bottom: 50 },
+                    { type: 'platform', left: 5400, width: 200, height: 50, bottom: 80 },
+                    { type: 'moving-obstacle', left: 5650, width: 70, height: 35, bottom: 50, range: 150, speed: 2.3 },
+                    { type: 'platform', left: 5800, width: 150, height: 50, bottom: 0 }
+                ]
+            }
+        };
+
+        let currentLevelIndex = 1; // Bắt đầu từ level 1
+
+
+        // Hàm điều chỉnh kích thước game container cho responsive
+        function resizeGame() {
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            let scale = 1;
+            const viewportAspectRatio = viewportWidth / viewportHeight;
+
+            if (viewportAspectRatio > gameAspectRatio) {
+                // Chiều cao là yếu tố giới hạn, căn theo chiều cao
+                scale = viewportHeight / gameBaseHeight;
+            } else {
+                // Chiều rộng là yếu tố giới hạn, căn theo chiều rộng
+                scale = viewportWidth / gameBaseWidth;
+            }
+
+            scale = Math.min(scale, maxGameScale);
+            scale = Math.max(scale, minGameScale);
+
+            gameContainer.style.transform = `scale(${scale})`;
+            
+            // Cập nhật kích thước hiệu quả thực tế của game container
+            currentEffectiveGameWidth = gameBaseWidth * scale;
+            currentEffectiveGameHeight = gameBaseHeight * scale;
+
+            const mobileControlsPortrait = document.getElementById('mobile-controls');
+            const mobileControlsLeftLandscape = document.getElementById('left-controls-area');
+            const mobileControlsRightLandscape = document.getElementById('right-controls-area');
+
+            if (viewportWidth < 1000 && viewportWidth / viewportHeight < 1) { // Mobile dọc
+                mobileControlsPortrait.style.display = 'flex';
+                mobileControlsLeftLandscape.style.display = 'none';
+                mobileControlsRightLandscape.style.display = 'none';
+            } else if (viewportWidth < 1000 && viewportWidth / viewportHeight >= 1) { // Mobile ngang / Tablet
+                mobileControlsPortrait.style.display = 'none';
+                mobileControlsLeftLandscape.style.display = 'flex';
+                mobileControlsRightLandscape.style.display = 'flex';
+            } else { // PC
+                mobileControlsPortrait.style.display = 'none';
+                mobileControlsLeftLandscape.style.display = 'none';
+                mobileControlsRightLandscape.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('resize', resizeGame);
+
+        // Hàm để tải một level cụ thể
+        function loadLevel(levelData) {
+            // Xóa tất cả các element cũ khỏi gameWorld
+            while (gameWorld.firstChild) {
+                gameWorld.removeChild(gameWorld.firstChild);
+            }
+            gameElements = [];
+            movingObstacles = [];
+
+            // Thiết lập lại kích thước gameWorld theo worldWidth của level mới
+            gameWorld.style.width = levelData.worldWidth + 'px';
+
+            // Tạo lại finish line
+            const newFinishLine = document.createElement('div');
+            newFinishLine.id = 'finish-line';
+            newFinishLine.style.left = levelData.finishLine.left + 'px';
+            newFinishLine.style.bottom = levelData.finishLine.bottom + 'px';
+            newFinishLine.style.width = levelData.finishLine.width + 'px';
+            newFinishLine.style.height = levelData.finishLine.height + 'px';
+            gameWorld.appendChild(newFinishLine);
+            finishLine = newFinishLine; // Cập nhật biến finishLine toàn cục
+
+            // Thêm lại div hướng dẫn vào gameWorld (nếu nó bị xóa bởi while loop)
+            // Đảm bảo gameInstructions đã được khởi tạo và không bị xóa khỏi DOM
+            gameWorld.appendChild(gameInstructions);
+
+            // Tạo lại các elements của level
+            levelData.elements.forEach(data => {
+                const el = document.createElement('div');
+                el.classList.add(data.type);
+                el.style.left = data.left + 'px';
+                el.style.bottom = data.bottom + 'px';
+                el.style.width = data.width + 'px';
+                el.style.height = data.height + 'px';
+                gameWorld.appendChild(el);
+                gameElements.push(el);
+
+                if (data.type === 'moving-obstacle') {
+                    movingObstacles.push({
+                        element: el,
+                        initialLeft: data.left,
+                        range: data.range,
+                        speed: data.speed,
+                        direction: 1 
+                    });
+                }
+            });
+
+            // Thêm lại player vào gameWorld (nếu nó bị xóa bởi while loop)
+            gameWorld.appendChild(player);
+        }
+
+        function updateTimer() {
+            if (isGameOver) return;
+            elapsedTime = performance.now() - startTime;
+            const minutes = Math.floor(elapsedTime / 60000);
+            const seconds = Math.floor((elapsedTime % 60000) / 1000);
+            const milliseconds = Math.floor((elapsedTime % 1000) / 10);
+            timeDisplay.textContent = `Thời gian: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+        }
+
+        function updatePlayerPosition() {
+            player.style.left = playerX + 'px';
+            player.style.bottom = playerY + 'px';
+
+            if (xVelocity < 0 && facingRight) {
+                player.classList.add('flipped');
+                facingRight = false;
+            } else if (xVelocity > 0 && !facingRight) {
+                player.classList.remove('flipped');
+                facingRight = true;
+            }
+        }
+
+        function jump() {
+            if (isOnPlatform) { 
+                isJumping = true;
+                yVelocity = jumpStrength;
+                isOnPlatform = false; 
+            }
+        }
+
+        function getElementRect(element) {
+            const left = parseInt(element.style.left);
+            const bottom = parseInt(element.style.bottom);
+            const width = parseInt(element.style.width); 
+            const height = parseInt(element.style.height); 
+            const right = left + width;
+            const top = bottom + height;
+            return { left, right, bottom, top, width, height };
+        }
+
+        function checkCollisionsX() {
+            if (isGameOver) return;
+            
+            const playerHitbox = {
+                left: playerX + hitboxXOffset,
+                right: playerX + playerActualWidth - hitboxXOffset,
+                bottom: playerY + hitboxYOffset,
+                top: playerY + playerActualHeight
+            };
+
+            gameElements.forEach(element => {
+                const elementRect = getElementRect(element);
+
+                const horizontalOverlap = playerHitbox.left < elementRect.right && playerHitbox.right > elementRect.left;
+                const verticalOverlap = playerHitbox.top > elementRect.bottom && playerHitbox.bottom < elementRect.top;
+
+                if (horizontalOverlap && verticalOverlap) {
+                    if (element.classList.contains('hazard')) {
+                        endGame('Bạn đã chạm chướng ngại vật nguy hiểm!');
+                        return; 
+                    }
+
+                    if (element.classList.contains('obstacle') || element.classList.contains('moving-obstacle')) {
+                        if (xVelocity > 0) { 
+                            playerX = elementRect.left - (playerActualWidth - hitboxXOffset); 
+                            xVelocity = 0;
+                        } else if (xVelocity < 0) { 
+                            playerX = elementRect.right - hitboxXOffset; 
+                            xVelocity = 0;
+                        }
+                    }
+                }
+            });
+        }
+        
+        function checkCollisionsY(previousPlayerY) {
+            if (isGameOver) return; 
+
+            let playerCurrentlyOnPlatform = false;
+            let highestPlatformY = -Infinity; 
+
+            const playerHitbox = {
+                left: playerX + hitboxXOffset,
+                right: playerX + playerActualWidth - hitboxXOffset,
+                bottom: playerY + hitboxYOffset,
+                top: playerY + playerActualHeight
+            };
+            
+            // Va chạm từ dưới lên (đụng trần)
+            if (yVelocity > 0) { 
+                gameElements.forEach(element => {
+                    if (element.classList.contains('platform') || element.classList.contains('obstacle') || element.classList.contains('moving-obstacle')) {
+                        const elementRect = getElementRect(element);
+
+                        const horizontalOverlap = (playerHitbox.right > elementRect.left && playerHitbox.left < elementRect.right);
+                        
+                        if (horizontalOverlap && 
+                            (previousPlayerY + playerActualHeight) <= elementRect.bottom && 
+                            (playerY + playerActualHeight) > elementRect.bottom) 
+                        {
+                            playerY = elementRect.bottom - playerActualHeight; 
+                            yVelocity = 0; 
+                            isJumping = true; 
+                        }
+                    }
+                });
+            }
+
+            // Va chạm từ trên xuống (đứng trên platform)
+            gameElements.forEach(element => {
+                if (element.classList.contains('platform') || element.classList.contains('obstacle') || element.classList.contains('moving-obstacle')) {
+                    const elementRect = getElementRect(element);
+
+                    const horizontalOverlap = (playerHitbox.right > elementRect.left && playerHitbox.left < elementRect.right);
+
+                    if (horizontalOverlap && 
+                        yVelocity <= 0 && 
+                        (previousPlayerY + hitboxYOffset) >= elementRect.top && 
+                        (playerY + hitboxYOffset) <= elementRect.top) 
+                    {
+                        if (element.classList.contains('hazard')) {
+                            endGame('Bạn đã chạm chướng ngại vật nguy hiểm!');
+                            return; 
+                        }
+
+                        if (elementRect.top > highestPlatformY) {
+                            highestPlatformY = elementRect.top;
+                            playerCurrentlyOnPlatform = true;
+                        }
+                    }
+                }
+            });
+
+            if (playerCurrentlyOnPlatform) {
+                playerY = highestPlatformY - hitboxYOffset;
+                yVelocity = 0;
+                isJumping = false;
+            } else {
+                yVelocity -= gravity; 
+            }
+            
+            isOnPlatform = playerCurrentlyOnPlatform; 
+
+            if (playerY + hitboxYOffset < deathFallThreshold && !isGameOver) { 
+                endGame('Bạn đã rơi xuống vực!');
+                return; 
+            }
+        }
+
+        function checkWin() {
+            if (isGameOver) return; 
+
+            const finishLineRect = getElementRect(finishLine); // Sử dụng finishLine đã được cập nhật
+
+            const playerHitbox = {
+                left: playerX + hitboxXOffset,
+                right: playerX + playerActualWidth - hitboxXOffset,
+                bottom: playerY + hitboxYOffset,
+                top: playerY + playerActualHeight
+            };
+
+            if (playerHitbox.left < finishLineRect.right &&
+                playerHitbox.right > finishLineRect.left &&
+                playerHitbox.bottom < finishLineRect.top &&
+                playerHitbox.top > finishLineRect.bottom ) {
+
+                clearInterval(timerInterval); // Dừng timer khi thắng
+
+                // Logic chuyển level
+                currentLevelIndex++; // Tăng level index
+                if (gameLevels['level' + currentLevelIndex]) {
+                    // Nếu có level tiếp theo
+                    gameMessage.innerHTML = `<p>Bạn đã hoàn thành Level ${currentLevelIndex - 1}!</p><p>Chuẩn bị cho Level ${currentLevelIndex}!</p><button id="next-level-button">Tiếp tục</button>`;
+                    gameMessage.style.display = 'block';
+
+                    const nextLevelButton = document.querySelector('#game-message #next-level-button');
+                    nextLevelButton.addEventListener('click', startNextLevel);
+                    nextLevelButton.addEventListener('touchend', (e) => { e.preventDefault(); startNextLevel(); });
+
+                    cancelAnimationFrame(window.animationFrameId);
+                    isGameOver = true; // Vẫn coi là game over tạm thời để dừng loop
+                } else {
+                    // Đã hoàn thành tất cả các level
+                    endGame('Bạn đã hoàn thành tất cả các level!'); // Hàm endGame sẽ hiển thị lịch sử và nút chơi lại
+                }
+            }
+        }
+
+        function startNextLevel() {
+            isGameOver = false; // Đặt lại trạng thái game
+            gameMessage.style.display = 'none'; // Ẩn thông báo
+
+            // Reset vị trí player và camera cho level mới
+            const nextLevelData = gameLevels['level' + currentLevelIndex];
+            playerX = nextLevelData.initialPlayerX || 50; 
+            playerY = nextLevelData.initialPlayerY || (50 - hitboxYOffset + 1); 
+            xVelocity = 0;
+            yVelocity = 0;
+            isJumping = false;
+            isMovingLeft = false;
+            isMovingRight = false;
+            isOnPlatform = false;
+            cameraX = 0; // Camera reset về 0 cho level mới
+
+            // Tải level mới
+            loadLevel(nextLevelData);
+            
+            // Khởi động lại timer
+            startTime = performance.now();
+            elapsedTime = 0;
+            timeDisplay.textContent = 'Thời gian: 00:00.00';
+            timerInterval = setInterval(updateTimer, 10);
+
+            // Khởi động lại game loop
+            lastFrameTime = performance.now(); 
+            window.animationFrameId = requestAnimationFrame(gameLoop);
+
+            // Hiển thị lại hướng dẫn cho level mới (tùy chọn)
+            gameInstructions.style.opacity = '1';
+            gameInstructions.style.display = 'block';
+            setTimeout(() => {
+                gameInstructions.style.opacity = '0';
+                setTimeout(() => {
+                    gameInstructions.style.display = 'none';
+                }, 500); 
+            }, 5000); 
+        }
+
+        function endGame(message) {
+            isGameOver = true;
+            clearInterval(timerInterval);
+
+            let finalMessage = `<p>${message}</p>`;
+            let newRecord = false;
+
+            // Chỉ lưu lịch sử và hiển thị kỷ lục nếu là chiến thắng cuối cùng
+            if (message.includes('hoàn thành tất cả các level')) {
+                const finalTime = elapsedTime; // Lấy tổng thời gian hoàn thành game
+                winHistory.push(finalTime); 
+                winHistory.sort((a, b) => a - b);
+                if (winHistory.length > 5) {
+                    winHistory = winHistory.slice(0, 5);
+                }
+                localStorage.setItem('gameWinHistory', JSON.stringify(winHistory));
+
+                const minutes = Math.floor(finalTime / 60000);
+                const seconds = Math.floor((elapsedTime % 60000) / 1000);
+                const milliseconds = Math.floor((elapsedTime % 1000) / 10);
+                const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+
+                finalMessage += `<p>Tổng thời gian của bạn: ${formattedTime}</p>`;
+
+                if (winHistory.length > 0 && finalTime === winHistory[0]) {
+                    newRecord = true;
+                }
+
+                if (newRecord) {
+                    finalMessage += `<p>Kỷ lục mới!</p>`;
+                }
+
+                finalMessage += '<p>Lịch sử chiến thắng:</p><ul>';
+                if (winHistory.length === 0) {
+                    finalMessage += '<li>Chưa có kỷ lục nào.</li>';
+                } else {
+                    winHistory.forEach((time, index) => {
+                        const minutes = Math.floor(time / 60000);
+                        const seconds = Math.floor((time % 60000) / 1000);
+                        const milliseconds = Math.floor((time % 1000) / 10);
+                        const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+                        finalMessage += `<li>${index + 1}. ${formattedTime}</li>`;
+                    });
+                }
+                finalMessage += '</ul>';
+
+            } else if (message.includes('chướng ngại vật nguy hiểm') || message.includes('rơi xuống vực')) {
+                finalMessage += `<p>Hãy thử lại!</p>`;
+                // Không thêm lịch sử nếu thua
+            }
+
+
+            finalMessage += '<button id="reset-button">Chơi Lại</button>';
+            gameMessage.innerHTML = finalMessage;
+            gameMessage.style.display = 'block';
+
+            const existingResetButton = document.querySelector('#game-message #reset-button');
+            if (existingResetButton) {
+                existingResetButton.removeEventListener('click', initializeGame);
+                existingResetButton.removeEventListener('touchend', initializeGame); 
+            }
+            document.querySelector('#game-message #reset-button').addEventListener('click', initializeGame);
+            document.querySelector('#game-message #reset-button').addEventListener('touchend', (e) => {
+                e.preventDefault(); 
+                initializeGame();
+            });
+
+            cancelAnimationFrame(window.animationFrameId);
+        }
+
+        function gameLoop(currentTime) {
+            if (isGameOver) return;
+
+            if (!lastFrameTime) lastFrameTime = currentTime; 
+            const delta = (currentTime - lastFrameTime) / 1000; 
+            lastFrameTime = currentTime;
+
+            movingObstacles.forEach(obs => {
+                const currentLeft = parseInt(obs.element.style.left);
+                const maxLeft = obs.initialLeft + obs.range;
+                const minLeft = obs.initialLeft;
+
+                obs.element.style.left = currentLeft + (obs.speed * obs.direction * delta * targetFPS) + 'px';
+
+                if (obs.direction === 1 && parseInt(obs.element.style.left) >= maxLeft) {
+                    obs.direction = -1;
+                    obs.element.style.left = maxLeft + 'px'; 
+                } else if (obs.direction === -1 && parseInt(obs.element.style.left) <= minLeft) {
+                    obs.direction = 1;
+                    obs.element.style.left = minLeft + 'px'; 
+                }
+            });
+
+            if (isMovingLeft) {
+                xVelocity = Math.max(-maxSpeed, xVelocity - moveAcceleration * delta * targetFPS);
+            } else if (isMovingRight) {
+                xVelocity = Math.min(maxSpeed, xVelocity + moveAcceleration * delta * targetFPS);
+            } else {
+                if (xVelocity > 0) {
+                    xVelocity = Math.max(0, xVelocity - friction * delta * targetFPS);
+                } else if (xVelocity < 0) {
+                    xVelocity = Math.min(0, xVelocity + friction * delta * targetFPS);
+                }
+            }
+            
+            playerX += xVelocity;
+            // Không giới hạn playerX ở đây nữa, mà để camera xử lý giới hạn world
+            // playerX = Math.max(0, Math.min(level1Data.worldWidth - playerActualWidth, playerX));
+            checkCollisionsX(); 
+
+            const previousPlayerY = playerY;
+            playerY += yVelocity; 
+            checkCollisionsY(previousPlayerY); 
+
+            updatePlayerPosition();
+
+            // --- LOGIC CAMERA MỚI: LUÔN THEO DÕI NHÂN VẬT ---
+            let targetCameraX;
+
+            // Vị trí trên màn hình mà nhân vật sẽ được "neo" (ví dụ: 25% chiều rộng màn hình từ trái)
+            // Bạn có thể tùy chỉnh giá trị này: 0.1 (rất gần mép trái), 0.25 (1/4), 0.33 (1/3), 0.5 (giữa)
+            const playerAnchorXOnScreen = currentEffectiveGameWidth * 0.25; 
+
+            // Tính toán targetCameraX để giữ nhân vật ở playerAnchorXOnScreen
+            targetCameraX = -(playerX - playerAnchorXOnScreen); 
+            
+            // Áp dụng Lerp để làm mượt chuyển động của camera
+            cameraX = cameraX + (targetCameraX - cameraX) * CAMERA_SMOOTHNESS;
+
+            // Giới hạn cameraX để không cuộn ra ngoài thế giới game
+            // maxAllowedCameraX = 0: Khi camera ở điểm bắt đầu của thế giới game
+            const maxAllowedCameraX = 0; 
+            // minAllowedCameraX = -(level1Data.worldWidth - currentEffectiveGameWidth): Khi camera cuộn đến cuối thế giới game
+            const minAllowedCameraX = -(gameLevels['level' + currentLevelIndex].worldWidth - currentEffectiveGameWidth); 
+
+            cameraX = Math.min(maxAllowedCameraX, cameraX); // Không đi quá bên trái
+            cameraX = Math.max(minAllowedCameraX, cameraX); // Không đi quá bên phải
+
+            gameWorld.style.transform = `translateX(${cameraX}px)`;
+
+            checkWin(); 
+
+            window.animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (isGameOver) return;
+            if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
+                event.preventDefault();
+            }
+
+            switch (event.code) {
+                case 'KeyA':
+                case 'ArrowLeft': 
+                    isMovingLeft = true;
+                    break;
+                case 'KeyD':
+                case 'ArrowRight': 
+                    isMovingRight = true;
+                    break;
+                case 'Space':
+                case 'ArrowUp': 
+                    jump();
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            if (isGameOver) return;
+
+            switch (event.code) {
+                case 'KeyA':
+                case 'ArrowLeft':
+                    isMovingLeft = false;
+                    break;
+                case 'KeyD':
+                case 'ArrowRight':
+                    isMovingRight = false;
+                    break;
+            }
+        });
+
+        // Event listeners cho mobile controls (Portrait)
+        leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingLeft = true; });
+        leftButton.addEventListener('touchend', (e) => { e.preventDefault(); isMovingLeft = false; });
+        rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingRight = true; });
+        rightButton.addEventListener('touchend', (e) => { e.preventDefault(); isMovingRight = false; }); 
+        jumpButton.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
+        jumpButton.addEventListener('touchend', (e) => { e.preventDefault(); }); 
+
+        // Event listeners cho mobile controls (Landscape)
+        leftButtonLandscape.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingLeft = true; });
+        leftButtonLandscape.addEventListener('touchend', (e) => { e.preventDefault(); isMovingLeft = false; });
+        rightButtonLandscape.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingRight = true; });
+        rightButtonLandscape.addEventListener('touchend', (e) => { e.preventDefault(); isMovingRight = false; }); 
+        jumpButtonLandscape.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
+        jumpButtonLandscape.addEventListener('touchend', (e) => { e.preventDefault(); }); 
+
+
+        function initializeGame() {
+            currentLevelIndex = 1; // Luôn bắt đầu từ Level 1 khi khởi tạo game
+            loadLevel(gameLevels.level1); // Tải level 1
+
+            playerX = gameLevels.level1.initialPlayerX || 50; // Sử dụng giá trị từ levelData, nếu không thì mặc định 50
+            playerY = gameLevels.level1.initialPlayerY || (50 - hitboxYOffset + 1); // Sử dụng giá trị từ levelData, nếu không thì mặc định 50
+
+            xVelocity = 0;
+            yVelocity = 0;
+            isJumping = false;
+            isMovingLeft = false;
+            isMovingRight = false;
+            isGameOver = false;
+            isOnPlatform = false; 
+
+            playerActualWidth = playerBaseWidth;
+            playerActualHeight = playerBaseHeight;
+            player.classList.remove('crouching', 'in-air', 'flipped');
+            facingRight = true;
+            cameraX = 0; // Đảm bảo camera reset về 0 khi bắt đầu game mới
+
+            gameMessage.style.display = 'none'; 
+
+            startTime = performance.now();
+            elapsedTime = 0;
+            timeDisplay.textContent = 'Thời gian: 00:00.00';
+            clearInterval(timerInterval); 
+            timerInterval = setInterval(updateTimer, 10); 
+
+            updatePlayerPosition(); 
+
+            // Hiển thị hướng dẫn
+            gameInstructions.style.opacity = '1';
+            gameInstructions.style.display = 'block';
+            setTimeout(() => {
+                gameInstructions.style.opacity = '0'; // Bắt đầu làm mờ
+                setTimeout(() => {
+                    gameInstructions.style.display = 'none';
+                }, 500); // Phù hợp với thời gian transition opacity
+            }, 5000); // Ẩn sau 5 giây (bạn có thể điều chỉnh thời gian này)
+
+            if (window.animationFrameId) {
+                cancelAnimationFrame(window.animationFrameId);
+            }
+            lastFrameTime = performance.now(); 
+            window.animationFrameId = requestAnimationFrame(gameLoop); 
+        }
+
+        // Gọi resizeGame lần đầu khi trang tải xong
+        document.addEventListener('DOMContentLoaded', () => {
+            resizeGame(); 
+            initializeGame();
+        });
+    </script>
+</body>
+</html>
