@@ -2,20 +2,26 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>MiniGamex Xí Ngầu - Debug Log Flow</title>
+    <title>MiniGamex Xí Ngầu</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', Arial, sans-serif; background: #e0f2fe; color: #222; text-align: center; padding: 30px; }
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: url('7.png') center/cover no-repeat fixed;
+            color: #222;
+            text-align: center;
+            padding: 30px;
+        }
         .container {
-            background: white;
+            background: rgba(255,255,255,0.93);
             margin: auto;
             padding: 2rem 1.5rem 2.5rem 1.5rem;
             border-radius: 1rem;
             max-width: 420px;
-            box-shadow: 0 10px 40px #0001;
+            box-shadow: 0 10px 40px #0003, 0 2px 10px #2a3e4c44;
             position: relative;
         }
-        h1 { color: #f59e42; font-size: 2rem; }
+        h1 { color: #f59e42; font-size: 2rem; letter-spacing: 2px; text-shadow: 0 2px 8px #0004; }
         .balance-blk { margin: 0 0 18px 0; font-size:1.12rem; }
         .balance-blk span { color: #10B981; font-weight: bold; }
         #connectWalletBtn, #depositBtn {
@@ -27,17 +33,16 @@
         #connectWalletBtn { background: #6366f1; color: #fff; }
         #connectWalletBtn.connected { background: #10B981 !important; color: #fff !important; }
         #depositBtn { background: #f59e42; color: #000; }
-
         .bet-amount-group, .bet-group { display: flex; justify-content: center; gap: 10px; margin: 18px 0; flex-wrap: wrap; }
         .bet-button, .bet-amount-btn, #startGameBtn {
             padding: 12px 18px; border: none; border-radius: 7px; font-size: 1rem; font-weight: bold;
             cursor: pointer; background: #4caf50; color: #fff; margin-bottom: 3px; min-width: 60px;
-            transition: background 0.18s;
+            transition: background 0.18s, transform 0.12s;
         }
         .bet-button.selected, .bet-amount-btn.selected { background: #f59e42; color: #222; }
         .bet-button[data-bet-type=number] { background: #3b82f6; }
         .bet-button[data-bet-type=number].selected { background: #f59e42; color: #222; }
-
+        .bet-button:active, .bet-amount-btn:active { transform: scale(0.93);}
         #startGameBtn { margin: 14px 0 10px 0; background: #10B981; }
         #startGameBtn:disabled { background: #9ca3af !important; }
         .info-blk {
@@ -49,11 +54,30 @@
             color: #f59e42;
             font-weight: bold;
             margin: 0 0 12px 0;
-            font-size: 1.1rem;
+            font-size: 1.15rem;
             min-height: 28px;
+            letter-spacing: 1px;
+        }
+        .dice-anim-container {
+            min-height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .dice-img {
+            font-size: 4.2rem;
+            transition: transform 0.3s;
+            display: inline-block;
+            filter: drop-shadow(0 5px 18px #2222);
+        }
+        .rolling {
+            animation: spinDice 0.7s linear infinite;
+        }
+        @keyframes spinDice {
+            100% { transform: rotate(360deg);}
         }
         #diceResult {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             margin: 10px 0 10px 0;
             min-height: 48px;
             letter-spacing: 2px;
@@ -93,6 +117,7 @@
         .modal-btns button.secondary { background: #9ca3af; color: #222; }
         @media (max-width: 500px) {
             .container { padding: 1.2rem 0.5rem 1.5rem 0.5rem; }
+            .dice-img { font-size: 2.6rem; }
         }
     </style>
 </head>
@@ -127,6 +152,9 @@
         </div>
         <button id="startGameBtn">Bắt đầu chơi</button>
         <div id="timerDisplay"></div>
+        <div class="dice-anim-container">
+            <span id="diceAnim" class="dice-img">🎲</span>
+        </div>
         <div id="diceResult">Hãy đặt cược và nhấn Bắt đầu chơi!</div>
     </div>
     <!-- MODAL -->
@@ -164,6 +192,7 @@
     const modalMessage = document.getElementById('modalMessage');
     const modalEmoji = document.getElementById('modalEmoji');
     const playAgainBtn = document.getElementById('playAgainBtn');
+    const diceAnim = document.getElementById('diceAnim');
 
     // ==== GAME VARS ====
     let selectedBet = null, selectedNumbers = [];
@@ -174,7 +203,6 @@
 
     // ======= ĐỒNG BỘ XU =======
     async function refreshBalance() {
-        console.log('[LOG] Gọi refreshBalance');
         if (!userAddress) {
             currentBalance = 0;
             updateWalletDisplay();
@@ -190,7 +218,6 @@
         updateWalletDisplay();
     }
     function updateWalletDisplay() {
-        console.log('[LOG] updateWalletDisplay, currentBalance =', currentBalance);
         currentBalanceDisplay.textContent = currentBalance.toLocaleString();
     }
     function updateWalletUI() {
@@ -219,7 +246,6 @@
 
     // ======= MODAL =======
     function showResultModal(title, message, emoji) {
-        console.log('[LOG] showResultModal:', title, message, emoji);
         modalTitle.textContent = title;
         modalMessage.textContent = message;
         modalEmoji.textContent = emoji || '';
@@ -227,14 +253,12 @@
         modalOverlay.classList.add("show");
     }
     function hideResultModal() {
-        console.log('[LOG] hideResultModal');
         resultModal.classList.remove("show");
         modalOverlay.classList.remove("show");
     }
 
     // ====== GAME LOGIC ======
     function initializeGame() {
-        console.log('[LOG] initializeGame - RESET UI');
         clearInterval(timerInterval);
         timeLeft = 5;
         selectedBet = null;
@@ -251,6 +275,8 @@
         startGameBtn.style.display = "inline-block";
         diceResultDisplay.innerHTML = 'Hãy đặt cược và nhấn Bắt đầu chơi!';
         timerDisplay.textContent = "";
+        diceAnim.classList.remove('rolling');
+        diceAnim.innerHTML = "🎲";
         updateWalletDisplay();
         updateBetInfo();
         hideResultModal();
@@ -260,29 +286,24 @@
         currentBetInfo.textContent = `Cược: ${currentBetAmount ? currentBetAmount.toLocaleString() : 0} Xu`;
     }
     function startBettingPhase() {
-        console.log('[LOG] Bắt đầu đếm ngược đặt cược...');
         if (!userAddress) return;
         gameStarted = true; gameLocked = false;
         startGameBtn.disabled = true; startGameBtn.style.display = "none";
         timeLeft = 5;
         timerDisplay.textContent = `Thời gian đặt cược: ${timeLeft}s`;
+        diceAnim.classList.add('rolling');
+        diceAnim.innerHTML = "🎲";
         timerInterval = setInterval(() => {
             timeLeft--;
-            console.log('[LOG] Còn', timeLeft, 'giây');
             timerDisplay.textContent = `Thời gian đặt cược: ${timeLeft}s`;
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
-                console.log('[LOG] Hết thời gian, chuẩn bị gọi endBettingPhase', Date.now());
-                setTimeout(() => {
-                  console.log('[LOG] ĐÃ QUA 1 GIÂY SAU KHI HẾT TIMER', Date.now());
-                  // không làm gì, chỉ test delay
-                }, 1000);
+                diceAnim.classList.remove('rolling');
                 endBettingPhase();
             }
         }, 1000);
     }
     async function endBettingPhase() {
-        console.log('[LOG] Đang chạy endBettingPhase', Date.now());
         betButtons.forEach(btn => btn.disabled = true);
         betAmountBtns.forEach(btn => btn.disabled = true);
         gameLocked = true;
@@ -290,16 +311,17 @@
             diceResultDisplay.innerHTML = "Không có kết quả!";
             showResultModal("Thiếu cược", "Bạn chưa chọn cửa đặt cược!", "⚠️");
             gameStarted = false;
+            diceAnim.classList.remove('rolling');
             return;
         }
         if (currentBetAmount > currentBalance) {
             diceResultDisplay.innerHTML = "Không có kết quả!";
             showResultModal("Thiếu xu", `Bạn không đủ ${currentBetAmount.toLocaleString()} xu để đặt cược!`, "💸");
             gameStarted = false;
+            diceAnim.classList.remove('rolling');
             return;
         }
         try {
-            console.log('[LOG] Gửi API đặt cược /play/bet');
             let response = await fetch(`${BACKEND_URL}/play/bet`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -309,34 +331,37 @@
             let data = null;
             try { data = JSON.parse(text); } catch(e) {}
             if (!response.ok || !data || !data.success) {
-                console.log('[LOG] API /play/bet lỗi:', text);
                 diceResultDisplay.innerHTML = "Không có kết quả!";
                 showResultModal("API lỗi", data && data.error ? data.error : text, "⚠️");
                 await refreshBalance();
                 gameStarted = false;
+                diceAnim.classList.remove('rolling');
                 return;
             }
             await refreshBalance();
         } catch (e) {
-            console.log('[LOG] Lỗi mạng/API:', e);
             diceResultDisplay.innerHTML = "Không có kết quả!";
             showResultModal("Lỗi mạng/API", String(e), "⚠️");
             await refreshBalance();
             gameStarted = false;
+            diceAnim.classList.remove('rolling');
             return;
         }
         // Hiệu ứng xúc xắc
-        console.log('[LOG] Hiệu ứng xúc xắc, chờ 1 giây...', Date.now());
-        diceResultDisplay.innerHTML = '<span style="font-size:3.2rem;display:inline-block;animation:spin 0.7s linear;">🎲</span>';
+        diceAnim.classList.add('rolling');
+        diceAnim.innerHTML = "🎲";
+        diceResultDisplay.innerHTML = "";
         setTimeout(() => {
+            diceAnim.classList.remove('rolling');
             const result = Math.floor(Math.random() * 6) + 1;
-            console.log('[LOG] Random kết quả là', result, Date.now());
-            diceResultDisplay.innerHTML = `<span style="font-size:2.8rem;">${result}</span>`;
+            // Hiển thị mặt xúc xắc đẹp bằng emoji Unicode
+            const diceFaces = ["", "⚀","⚁","⚂","⚃","⚄","⚅"];
+            diceAnim.innerHTML = diceFaces[result] || result;
+            diceResultDisplay.innerHTML = `<span style="font-size:2.4rem;">${result}</span>`;
             checkResult(result);
         }, 1000);
     }
     async function checkResult(result) {
-        console.log('[LOG] Vào checkResult với kết quả', result, 'selectedBet', selectedBet, 'selectedNumbers', selectedNumbers, Date.now());
         let isWinner = false, winMultiplier = 0;
         if (selectedBet === 'tai' && result >= 4) { isWinner = true; winMultiplier = 2; }
         else if (selectedBet === 'xiu' && result <= 3) { isWinner = true; winMultiplier = 2; }
@@ -344,7 +369,6 @@
         if (isWinner) {
             const winnings = currentBetAmount * winMultiplier;
             try {
-                console.log('[LOG] Bạn thắng, gửi API /play/win');
                 let response = await fetch(`${BACKEND_URL}/play/win`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -354,18 +378,15 @@
                 let data = null;
                 try { data = JSON.parse(text); } catch(e){}
                 if (!response.ok || !data || !data.success) {
-                    console.log('[LOG] API /play/win lỗi:', text);
                     showResultModal("API lỗi", data && data.error ? data.error : text, "⚠️");
                 } else {
                     showResultModal("Chúc mừng!", `Bạn thắng ${winnings.toLocaleString()} xu!`, "🎉");
                 }
             } catch (e) {
-                console.log('[LOG] Lỗi mạng/API khi cộng thưởng:', e);
                 showResultModal("API lỗi", String(e), "⚠️");
             }
             await refreshBalance();
         } else {
-            console.log('[LOG] Bạn thua, show modal kết quả');
             showResultModal("Thua rồi!", `Bạn đã thua ${currentBetAmount.toLocaleString()} xu.`, "😢");
             await refreshBalance();
         }
@@ -378,7 +399,6 @@
         btn.classList.add('selected');
         selectedBet = btn.dataset.betType;
         selectedNumbers = btn.dataset.numbers.split(',').map(Number);
-        console.log('[LOG] Chọn cược:', selectedBet, selectedNumbers);
     });
     betAmountBtns.forEach(btn => btn.onclick = () => {
         if (gameLocked) return;
@@ -386,7 +406,6 @@
         btn.classList.add('selected');
         currentBetAmount = parseInt(btn.dataset.amount);
         updateBetInfo();
-        console.log('[LOG] Chọn số xu cược:', currentBetAmount);
     });
     startGameBtn.onclick = function() {
         if (gameStarted) return;
@@ -394,11 +413,9 @@
         if (!selectedBet) { showResultModal("Chưa chọn cửa", "Bạn chưa chọn cửa đặt cược!", "⚠️"); return; }
         if (!currentBetAmount) { showResultModal("Thiếu cược", "Chọn số xu đặt cược!", "⚠️"); return; }
         if (currentBetAmount > currentBalance) { showResultModal("Thiếu xu", "Bạn không đủ xu!", "💸"); return; }
-        console.log('[LOG] Bấm Bắt đầu chơi');
         startBettingPhase();
     };
     playAgainBtn.onclick = () => {
-        console.log('[LOG] Bấm nút Chơi Lại, gọi initializeGame');
         initializeGame();
     };
     modalOverlay.onclick = hideResultModal;
@@ -418,7 +435,6 @@
                 updateWalletUI();
                 await refreshBalance();
                 setControlsBasedOnWallet();
-                console.log('[LOG] Đăng nhập ví thành công, gọi initializeGame');
                 initializeGame();
             }
         } catch (e) {
@@ -426,7 +442,6 @@
         }
     }
 
-    // ======= GIỐNG ĐUA VỊT: KHÔNG GỌI LẠI initializeGame KHI ĐỒNG BỘ XU HOẶC ĐỔI VÍ =======
     document.addEventListener('DOMContentLoaded', async () => {
         if (window.ethereum) {
             const accounts = await window.ethereum.request({ method: 'eth_accounts' });
@@ -439,11 +454,9 @@
             }
         }
         setControlsBasedOnWallet();
-        console.log('[LOG] Trang load xong, gọi initializeGame');
         initializeGame();
     });
     window.addEventListener('focus', () => {
-        console.log('[LOG] Sự kiện window focus - refreshBalance');
         refreshBalance();
     });
 
@@ -454,7 +467,6 @@
                 provider = new ethers.providers.Web3Provider(window.ethereum);
                 signer = provider.getSigner(userAddress);
                 updateWalletUI();
-                console.log('[LOG] Đổi account, refreshBalance');
                 await refreshBalance();
             } else {
                 userAddress = null;
@@ -463,7 +475,6 @@
                 updateWalletDisplay();
             }
             setControlsBasedOnWallet();
-            // KHÔNG gọi initializeGame ở đây!
         });
     }
     </script>
