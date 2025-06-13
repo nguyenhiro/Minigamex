@@ -5,7 +5,6 @@
   <title>Trang Chủ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* ... giữ nguyên CSS ... */
     body {
       margin: 0;
       background: #111215;
@@ -16,20 +15,112 @@
       display: flex;
       min-height: 100vh;
     }
-    .sidebar { /* ... */ }
-    .sidebar-btn { /* ... */ }
-    .sidebar-btn:hover, .sidebar-btn.active { /* ... */ }
-    .main-content { /* ... */ }
-    .room-grid { /* ... */ }
-    .room-card { /* ... */ }
-    .room-card:hover { /* ... */ }
-    .room-banner { /* ... */ }
-    .room-number { /* ... */ }
-    .room-info { /* ... */ }
-    .room-title { /* ... */ }
-    .room-link { /* ... */ }
-    .room-link:hover { /* ... */ }
-    .room-clicks { /* ... */ }
+    .sidebar {
+      width: 240px;
+      background: #18191c;
+      display: flex;
+      flex-direction: column;
+      padding-top: 32px;
+      gap: 8px;
+      border-right: 1px solid #222;
+    }
+    .sidebar-btn {
+      background: none;
+      border: none;
+      color: #d1d5db;
+      text-align: left;
+      padding: 12px 28px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .sidebar-btn:hover, .sidebar-btn.active {
+      background: #28292e;
+      color: #fff;
+    }
+    .main-content {
+      flex: 1;
+      padding: 32px;
+      min-width: 0;
+    }
+    .room-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 28px;
+      margin-top: 18px;
+    }
+    .room-card {
+      background: #191a1f;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow .2s, transform .2s;
+      position: relative;
+    }
+    .room-card:hover {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: 0 8px 24px rgba(0,0,0,.28);
+    }
+    .room-banner {
+      height: 120px;
+      background: #303136;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: 8px;
+    }
+    .room-number {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      background: #22283e;
+      color: #13f2fd;
+      padding: 4px 13px;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 14px;
+      letter-spacing: 1.5px;
+    }
+    .room-info {
+      padding: 16px 18px 14px 18px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .room-title {
+      font-weight: 600;
+      font-size: 18px;
+      margin: 0;
+      color: #fff;
+    }
+    .room-link {
+      color: #3beade;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+      margin-top: 6px;
+      margin-bottom: 6px;
+      transition: color .2s;
+    }
+    .room-link:hover {
+      color: #10b981;
+      text-decoration: underline;
+    }
+    .room-clicks {
+      font-size: 14px;
+      color: #8fd6c0;
+      background: #181f1a;
+      border-radius: 8px;
+      padding: 4px 10px;
+      display: inline-block;
+      margin-top: 4px;
+    }
     @media (max-width: 900px) {
       .container { flex-direction: column;}
       .sidebar { flex-direction: row; width: 100%; border-right:none; border-bottom:1px solid #222;}
@@ -40,16 +131,13 @@
 </head>
 <body>
   <div class="container">
-    <!-- Sidebar -->
     <nav class="sidebar">
       <button class="sidebar-btn active">Trang chủ</button>
       <button class="sidebar-btn">Giải đấu</button>
       <button class="sidebar-btn">Câu lạc bộ</button>
       <button class="sidebar-btn">Tin tức</button>
       <button class="sidebar-btn">BXH</button>
-      <!-- Thêm các nút khác tùy ý -->
     </nav>
-    <!-- Main -->
     <main class="main-content">
       <h2>Danh sách phòng</h2>
       <div class="room-grid">
@@ -60,7 +148,7 @@
           <div class="room-info">
             <div class="room-title">Phòng 1 - Đua Vịt</div>
             <a class="room-link" href="gameduavit.html" target="_blank">Vào phòng</a>
-            <span class="room-clicks">Số lần chơi: <span id="clicks-room1">0</span> lần</span>
+            <span class="room-clicks">Số lần chơi: <span id="clicks-room1">1234</span> lần</span>
           </div>
         </div>
         <!-- Room 2 -->
@@ -70,7 +158,7 @@
           <div class="room-info">
             <div class="room-title">Phòng 2 - Xí Ngầu</div>
             <a class="room-link" href="https://example.com/room2" target="_blank">Vào phòng</a>
-            <span class="room-clicks">Số lần chơi: <span id="clicks-room2">0</span> lần</span>
+            <span class="room-clicks">Số lần chơi: <span id="clicks-room2">2345</span> lần</span>
           </div>
         </div>
         <!-- Room 3 -->
@@ -80,7 +168,7 @@
           <div class="room-info">
             <div class="room-title">Phòng 3</div>
             <a class="room-link" href="https://example.com/room3" target="_blank">Vào phòng</a>
-            <span class="room-clicks">Số lần chơi: <span id="clicks-room3">0</span> lần</span>
+            <span class="room-clicks">Số lần chơi: <span id="clicks-room3">3456</span> lần</span>
           </div>
         </div>
         <!-- Room 4 -->
@@ -90,7 +178,7 @@
           <div class="room-info">
             <div class="room-title">Phòng 4</div>
             <a class="room-link" href="https://example.com/room4" target="_blank">Vào phòng</a>
-            <span class="room-clicks">Số lần chơi: <span id="clicks-room4">0</span> lần</span>
+            <span class="room-clicks">Số lần chơi: <span id="clicks-room4">4567</span> lần</span>
           </div>
         </div>
         <!-- Room 5 -->
@@ -100,7 +188,7 @@
           <div class="room-info">
             <div class="room-title">Phòng 5</div>
             <a class="room-link" href="https://example.com/room5" target="_blank">Vào phòng</a>
-            <span class="room-clicks">Số lần chơi: <span id="clicks-room5">0</span> lần</span>
+            <span class="room-clicks">Số lần chơi: <span id="clicks-room5">5678</span> lần</span>
           </div>
         </div>
         <!-- Room 6 -->
@@ -110,7 +198,7 @@
           <div class="room-info">
             <div class="room-title">Phòng 6</div>
             <a class="room-link" href="https://example.com/room6" target="_blank">Vào phòng</a>
-            <span class="room-clicks">Số lần chơi: <span id="clicks-room6">0</span> lần</span>
+            <span class="room-clicks">Số lần chơi: <span id="clicks-room6">6789</span> lần</span>
           </div>
         </div>
         <!-- Room 7 -->
@@ -120,7 +208,7 @@
           <div class="room-info">
             <div class="room-title">Phòng 7</div>
             <a class="room-link" href="https://example.com/room7" target="_blank">Vào phòng</a>
-            <span class="room-clicks">Số lần chơi: <span id="clicks-room7">0</span> lần</span>
+            <span class="room-clicks">Số lần chơi: <span id="clicks-room7">7890</span> lần</span>
           </div>
         </div>
         <!-- Room 8 -->
@@ -130,7 +218,7 @@
           <div class="room-info">
             <div class="room-title">Phòng 8</div>
             <a class="room-link" href="https://example.com/room8" target="_blank">Vào phòng</a>
-            <span class="room-clicks">Số lần chơi: <span id="clicks-room8">0</span> lần</span>
+            <span class="room-clicks">Số lần chơi: <span id="clicks-room8">8901</span> lần</span>
           </div>
         </div>
         <!-- Room 9 -->
@@ -140,7 +228,7 @@
           <div class="room-info">
             <div class="room-title">Phòng 9</div>
             <a class="room-link" href="https://example.com/room9" target="_blank">Vào phòng</a>
-            <span class="room-clicks">Số lần chơi: <span id="clicks-room9">0</span> lần</span>
+            <span class="room-clicks">Số lần chơi: <span id="clicks-room9">9012</span> lần</span>
           </div>
         </div>
         <!-- Room 10 -->
@@ -150,60 +238,19 @@
           <div class="room-info">
             <div class="room-title">Phòng 10</div>
             <a class="room-link" href="https://example.com/room10" target="_blank">Vào phòng</a>
-            <span class="room-clicks">Số lần chơi: <span id="clicks-room10">0</span> lần</span>
+            <span class="room-clicks">Số lần chơi: <span id="clicks-room10">10123</span> lần</span>
           </div>
         </div>
-        <!-- Thêm các phòng khác tương tự -->
       </div>
     </main>
   </div>
-  <!-- JS lấy và tăng số click từ backend + realtime socket.io -->
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
-    // Danh sách tên phòng tương ứng với backend
-    const roomKeys = [
-      "room1", "room2", "room3",
-      "room4", "room5", "room6",
-      "room7", "room8", "room9", "room10"
-    ];
-
-    // Lấy số click cho tất cả phòng khi load trang
-    function fetchAllClicks() {
-      fetch('/api/clicks')
-        .then(res => res.json())
-        .then(data => {
-          roomKeys.forEach(room => {
-            const el = document.getElementById(`clicks-${room}`);
-            if (el) el.textContent = (data[room] || 0).toLocaleString();
-          });
-        });
-    }
-    fetchAllClicks();
-
-    // Khi bấm vào "Vào phòng", tăng số click phòng tương ứng
-    document.querySelectorAll('.room-card').forEach(card => {
-      const room = card.getAttribute('data-room');
-      const link = card.querySelector('.room-link');
-      link.addEventListener('click', function(e) {
-        // Gọi backend tăng click
-        fetch(`/api/clicks/${room}`, { method: 'POST' })
-          .then(res => res.json())
-          .then(data => {
-            const el = document.getElementById(`clicks-${room}`);
-            if (el) el.textContent = (data.count || 0).toLocaleString();
-          });
-        // (Không ngăn mở trang, backend sẽ ghi nhận click)
-      });
-    });
-
-    // --- SOCKET.IO REALTIME ---
-    const socket = io();
-    socket.on('updateClicks', function(clicks) {
-      roomKeys.forEach(room => {
-        const el = document.getElementById(`clicks-${room}`);
-        if (el) el.textContent = (clicks[room] || 0).toLocaleString();
-      });
-    });
+    // Nếu muốn random số lần chơi mỗi lần tải trang, dùng đoạn sau:
+    // const roomIds = ['room1','room2','room3','room4','room5','room6','room7','room8','room9','room10'];
+    // roomIds.forEach(room => {
+    //   let el = document.getElementById('clicks-' + room);
+    //   if (el) el.textContent = Math.floor(1000 + Math.random() * 9000);
+    // });
   </script>
 </body>
 </html>
