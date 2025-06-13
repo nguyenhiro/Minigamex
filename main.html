@@ -245,12 +245,42 @@
     </main>
   </div>
   <script>
-    // Nếu muốn random số lần chơi mỗi lần tải trang, dùng đoạn sau:
-    // const roomIds = ['room1','room2','room3','room4','room5','room6','room7','room8','room9','room10'];
-    // roomIds.forEach(room => {
-    //   let el = document.getElementById('clicks-' + room);
-    //   if (el) el.textContent = Math.floor(1000 + Math.random() * 9000);
-    // });
+    // Danh sách ID các phòng
+    const rooms = [
+      {id: "room1", default: 1234},
+      {id: "room2", default: 2345},
+      {id: "room3", default: 3456},
+      {id: "room4", default: 4567},
+      {id: "room5", default: 5678},
+      {id: "room6", default: 6789},
+      {id: "room7", default: 7890},
+      {id: "room8", default: 8901},
+      {id: "room9", default: 9012},
+      {id: "room10", default: 10123}
+    ];
+
+    // Cập nhật số lần chơi từ localStorage hoặc default
+    rooms.forEach(room => {
+      let count = Number(localStorage.getItem('clicks-' + room.id));
+      if (!count) count = room.default;
+      document.getElementById('clicks-' + room.id).textContent = count;
+    });
+
+    // Tăng số lần chơi khi bấm vào "Vào phòng"
+    document.querySelectorAll('.room-link').forEach(link => {
+      link.addEventListener('click', function() {
+        // Xác định phòng nào
+        const card = this.closest('.room-card');
+        const roomId = card.getAttribute('data-room');
+        const span = document.getElementById('clicks-' + roomId);
+
+        let count = Number(localStorage.getItem('clicks-' + roomId));
+        if (!count) count = Number(span.textContent) || 0;
+        count++;
+        span.textContent = count;
+        localStorage.setItem('clicks-' + roomId, count);
+      });
+    });
   </script>
 </body>
 </html>
