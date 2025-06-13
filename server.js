@@ -10,7 +10,10 @@ require("dotenv").config();
 const app = express();
 
 app.use(cors({
-    origin: 'http://127.0.0.1:5500'
+  origin: [
+    'https://nguyenhiro.github.io', // Cho phép GitHub Pages
+    'http://127.0.0.1:5500'         // Nếu muốn vẫn cho phép local
+  ]
 }));
 app.use(express.json());
 app.use(express.static(__dirname));
