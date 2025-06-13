@@ -27,7 +27,7 @@
   <div class="container">
     <h1>Trang Thanh Toán Nạp/Rút Xu Game</h1>
     <div class="nav-buttons">
-      <button onclick="window.location.href='gameduavit.html'" style="background:#10B981;">Quay lại Game</button>
+      <button id="backBtn" style="background:#10B981;">Quay lại Game</button>
     </div>
     <div class="section wallet-info">
       <h2>Thông tin ví</h2>
@@ -55,6 +55,22 @@
     </div>
   </div>
   <script>
+    // Xử lý nút quay lại về đúng game dựa vào ?from=...
+    document.getElementById('backBtn').onclick = function() {
+      function getQueryParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+      }
+      const from = getQueryParam('from');
+      if (from === 'xingau') {
+        window.location.href = "https://nguyenhiro.github.io/Minigamex/xingau.html";
+      } else if (from === 'duck' || from === 'gameduavit') {
+        window.location.href = "https://nguyenhiro.github.io/Minigamex/gameduavit.html";
+      } else {
+        window.location.href = "https://nguyenhiro.github.io/Minigamex/";
+      }
+    };
+
     const BACKEND_URL = "http://localhost:3000";
     const RAW_GAME_WALLET_ADDRESS = "0xC5240a2eBFF7a44b9707D1fE8A593c9468bED571";
     const NATIVE_COIN_DECIMALS = 18;
