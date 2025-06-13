@@ -128,7 +128,6 @@
     <div class="content-center">
       <img class="logo" src="logo.jpg" alt="Logo" />
       <div class="center-desc" id="welcomeContent">Chào Mừng Đến Với MINIGAMEX!</div>
-      <!-- Số lượng người đã click, tĩnh, hoặc random -->
       <div class="player-count"><span id="clickCount">1234</span> Người Chơi</div>
       <button class="main-btn" id="joinBtn">Play Now</button>
       <div class="scroll-indicator">
@@ -140,11 +139,16 @@
     </div>
   </section>
   <script>
-    // Nếu muốn số random mỗi lần F5 cho vui mắt:
-    // document.getElementById('clickCount').innerText = Math.floor(1000 + Math.random() * 9000);
+    // Lấy giá trị clickCount từ localStorage hoặc mặc định là 1234
+    let clickCount = Number(localStorage.getItem('clickCount')) || 1234;
+    const clickCountSpan = document.getElementById('clickCount');
+    clickCountSpan.innerText = clickCount;
 
-    // Nút Play Now chuyển sang main.html
+    // Nút Play Now chuyển sang main.html và tăng clickCount
     document.getElementById('joinBtn').onclick = function() {
+      clickCount++;
+      clickCountSpan.innerText = clickCount;
+      localStorage.setItem('clickCount', clickCount);
       window.open('main.html', '_blank');
     };
   </script>
