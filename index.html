@@ -16,7 +16,6 @@
     }
     .main-banner {
       background: url('https://via.placeholder.com/1600x800/14213d/ffffff?text=Main+Banner') center center/cover no-repeat;
-      /* Đổi URL này thành banner chính của bạn */
       width: 100vw;
       height: 100vh;
       min-height: 600px;
@@ -48,12 +47,6 @@
       display: block;
       margin-left: auto;
       margin-right: auto;
-    }
-    .mt-title {
-      font-size: 42px;
-      font-weight: 800;
-      margin: 0 0 20px 0;
-      letter-spacing: 1.2px;
     }
     .player-count {
       font-size: 28px;
@@ -133,16 +126,11 @@
   <section class="main-banner" style="background-image: url('4.png');">
     <div class="overlay"></div>
     <div class="content-center">
-      <!-- Logo có thể thay đổi -->
       <img class="logo" src="logo.jpg" alt="Logo" />
-      <!-- Nội dung chào mừng, có thể thay đổi -->
       <div class="center-desc" id="welcomeContent">Chào Mừng Đến Với MINIGAMEX!</div>
-      <!-- Số lượng người đã click, cập nhật động từ backend -->
-      <div class="player-count"><span id="clickCount">0</span> Người Chơi</div>
-      <!-- Nút tham gia -->
+      <!-- Số lượng người đã click, tĩnh, hoặc random -->
+      <div class="player-count"><span id="clickCount">1234</span> Người Chơi</div>
       <button class="main-btn" id="joinBtn">Play Now</button>
-
-      <!-- Scroll indicator -->
       <div class="scroll-indicator">
         <div class="mouse">
           <div class="mouse-wheel"></div>
@@ -151,50 +139,14 @@
       </div>
     </div>
   </section>
-  <!-- Thêm socket.io client từ CDN để hỗ trợ realtime -->
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
-    // Cấu hình link cho nút Tham Gia
-    const JOIN_LINK = "mian.html"; // Thay link tại đây
+    // Nếu muốn số random mỗi lần F5 cho vui mắt:
+    // document.getElementById('clickCount').innerText = Math.floor(1000 + Math.random() * 9000);
 
-    // Lấy số click từ backend khi load trang
-    function fetchClickCount() {
-      fetch('/api/clicks')
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('clickCount').innerText = (data.room1 || 0).toLocaleString();
-        })
-        .catch(() => {
-          document.getElementById('clickCount').innerText = "0";
-        });
-    }
-
-    fetchClickCount();
-
+    // Nút Play Now chuyển sang main.html
     document.getElementById('joinBtn').onclick = function() {
-      // Gọi backend tăng click phòng landing (room1)
-      fetch('/api/clicks/room1', { method: 'POST' })
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('clickCount').innerText = (data.count || 0).toLocaleString();
-          window.open(JOIN_LINK, '_blank');
-        })
-        .catch(() => {
-          // Nếu lỗi backend, vẫn mở trang
-          window.open(JOIN_LINK, '_blank');
-        });
+      window.open('main.html', '_blank');
     };
-
-    // --- SOCKET.IO REALTIME ---
-    const socket = io();
-    socket.on('updateClicks', function(clicks) {
-      // Chỉ cập nhật số room1 (landing) cho trang này
-      document.getElementById('clickCount').innerText = (clicks.room1 || 0).toLocaleString();
-    });
-
-    // Cho phép thay đổi nội dung chào mừng
-    // document.getElementById('welcomeContent').innerText = "Chào mừng bạn đến với MTT Sports!";
-    // Đổi banner: đổi thuộc tính background-image ở .main-banner
   </script>
 </body>
 </html>
