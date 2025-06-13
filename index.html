@@ -140,14 +140,14 @@
   </section>
   <script>
     // Lấy giá trị clickCount từ localStorage hoặc mặc định là 1234
-    let clickCount = Number(localStorage.getItem('clickCount')) || 1234;
-    const clickCountSpan = document.getElementById('clickCount');
-    clickCountSpan.innerText = clickCount;
+    let clickCount = Number(localStorage.getItem('clickCount'));
+    if (!clickCount) clickCount = 1234;
+    document.getElementById('clickCount').innerText = clickCount;
 
     // Nút Play Now chuyển sang main.html và tăng clickCount
     document.getElementById('joinBtn').onclick = function() {
       clickCount++;
-      clickCountSpan.innerText = clickCount;
+      document.getElementById('clickCount').innerText = clickCount;
       localStorage.setItem('clickCount', clickCount);
       window.open('main.html', '_blank');
     };
