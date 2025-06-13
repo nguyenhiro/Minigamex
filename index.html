@@ -151,6 +151,8 @@
       </div>
     </div>
   </section>
+  <!-- Thêm socket.io client từ CDN để hỗ trợ realtime -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     // Cấu hình link cho nút Tham Gia
     const JOIN_LINK = "mian.html"; // Thay link tại đây
@@ -182,6 +184,13 @@
           window.open(JOIN_LINK, '_blank');
         });
     };
+
+    // --- SOCKET.IO REALTIME ---
+    const socket = io();
+    socket.on('updateClicks', function(clicks) {
+      // Chỉ cập nhật số room1 (landing) cho trang này
+      document.getElementById('clickCount').innerText = (clicks.room1 || 0).toLocaleString();
+    });
 
     // Cho phép thay đổi nội dung chào mừng
     // document.getElementById('welcomeContent').innerText = "Chào mừng bạn đến với MTT Sports!";
