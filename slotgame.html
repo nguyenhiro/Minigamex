@@ -2,7 +2,8 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>MiniGamex Slot</title> <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <title>MiniGamex Slot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', Arial, sans-serif;
@@ -33,21 +34,21 @@
         #connectWalletBtn.connected { background: #10B981 !important; color: #fff !important; }
         #depositBtn { background: #f59e42; color: #000; }
         .bet-amount-group { display: flex; justify-content: center; gap: 10px; margin: 18px 0; flex-wrap: wrap; }
-        .bet-amount-btn, #startGameBtn { /* Renamed startGameBtn to spinButton */
+        .bet-amount-btn, #startGameBtn {
             padding: 12px 18px; border: none; border-radius: 7px; font-size: 1rem; font-weight: bold;
             cursor: pointer; background: #4caf50; color: #fff; margin-bottom: 3px; min-width: 60px;
             transition: background 0.18s, transform 0.12s;
         }
         .bet-amount-btn.selected { background: #f59e42; color: #222; }
         .bet-amount-btn:active, #startGameBtn:active { transform: scale(0.93);}
-        #startGameBtn { margin: 14px 0 10px 0; background: #10B981; } /* Still using startGameBtn ID for simplicity, will rename in JS */
+        #startGameBtn { margin: 14px 0 10px 0; background: #10B981; }
         #startGameBtn:disabled { background: #9ca3af !important; }
         .info-blk {
             margin: 10px 0 0 0;
             font-size: 1.03rem;
             color: #334155;
         }
-        #timerDisplay { /* We might repurpose or remove this for slot game */
+        #timerDisplay {
             color: #f59e42;
             font-weight: bold;
             margin: 0 0 12px 0;
@@ -55,7 +56,7 @@
             min-height: 28px;
             letter-spacing: 1px;
         }
-        .slot-machine { /* New styles for slot machine */
+        .slot-machine {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -63,41 +64,46 @@
             margin: 20px 0;
             background: #e0e0e0;
             border-radius: 8px;
-            overflow: hidden; /* Hide overflowing symbols during spin */
+            overflow: hidden;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
         }
         .reel {
-            width: 80px; /* Width of each reel */
+            width: 80px;
             height: 100px;
             border: 2px solid #ccc;
             margin: 0 5px;
             display: flex;
-            justify-content: center;
+            flex-direction: column; /* Changed to column to stack symbols */
+            justify-content: flex-start; /* Align symbols to top */
             align-items: center;
-            font-size: 3.5rem; /* Size of symbols */
+            font-size: 3.5rem;
             background: #fff;
             border-radius: 5px;
             overflow: hidden;
             position: relative;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease-out; /* Add transition for smooth stopping */
         }
-        .reel span {
-            display: block;
+        .reel.spinning { /* Class to apply when spinning */
+            transition: none; /* Disable transition during rapid spinning */
+        }
+        .reel .symbol-list { /* Container for symbols inside the reel */
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            transition: transform 0.1s ease-out; /* Smooth transition for stopping */
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .rolling .reel span { /* Animation for spinning */
-            animation: spinReel 0.1s linear infinite;
-        }
-        @keyframes spinReel {
-            0% { transform: translate(-50%, -50%) translateY(0); }
-            100% { transform: translate(-50%, -50%) translateY(-100%); } /* Simulate spinning by moving symbols up */
+        .reel .symbol-list span {
+            height: 100px; /* Each symbol takes up the full reel height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         #slotResult {
-            font-size: 1.8rem; /* Adjusted font size for result */
+            font-size: 1.8rem;
             margin: 10px 0 10px 0;
             min-height: 48px;
             letter-spacing: 1px;
@@ -140,17 +146,19 @@
         @media (max-width: 500px) {
             .container { padding: 1.2rem 0.5rem 1.5rem 0.5rem; }
             .reel { font-size: 2.2rem; width: 60px; height: 80px; }
+            .reel .symbol-list span { height: 80px; } /* Adjust symbol height for smaller screens */
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Slot Machine</h1> <div>
+        <h1>Slot Machine</h1>
+        <div>
             <button id="connectWalletBtn"><span id="walletBtnIcon">🔗</span> <span id="walletBtnText">Kết nối ví</span></button>
             <button id="depositBtn">💰 Nạp/Rút Xu</button>
         </div>
         <div class="balance-blk">Tổng Xu: <span id="currentBalance">0</span></div>
-        <div class="info-blk" id="currentBetInfo">Cược: 0 Xu</div>
+        <div class="info-blk" id="currentBetInfo">Cược: <span id="displayBetAmount">0</span> Xu</div>
         <span class="bet-input-label">Đặt cược:</span>
         <div class="bet-amount-group" id="betAmountGroup">
             <button type="button" class="bet-amount-btn" data-amount="1">1</button>
@@ -159,11 +167,16 @@
             <button type="button" class="bet-amount-btn selected" data-amount="100">100</button>
             <button type="button" class="bet-amount-btn" data-amount="500">500</button>
         </div>
-        <button id="startGameBtn">Quay</button> <div id="timerDisplay"></div> <div class="slot-machine" id="slotMachine"> <div class="reel"><span id="reel1">🍒</span></div>
-            <div class="reel"><span id="reel2">🍒</span></div>
-            <div class="reel"><span id="reel3">🍒</span></div>
+        <button id="startGameBtn">Quay</button>
+        <div id="timerDisplay"></div>
+
+        <div class="slot-machine" id="slotMachine">
+            <div class="reel" id="reel1"><div class="symbol-list"></div></div>
+            <div class="reel" id="reel2"><div class="symbol-list"></div></div>
+            <div class="reel" id="reel3"><div class="symbol-list"></div></div>
         </div>
-        <div id="slotResult">Nhấn Quay để bắt đầu!</div> </div>
+        <div id="slotResult">Nhấn Quay để bắt đầu!</div>
+    </div>
     <div class="modal-overlay" id="modalOverlay"></div>
     <div class="modal" id="resultModal">
         <div class="modal-title" id="modalTitle"></div>
@@ -186,12 +199,12 @@
     const walletBtnText = document.getElementById('walletBtnText');
     const depositBtn = document.getElementById('depositBtn');
     const currentBalanceDisplay = document.getElementById('currentBalance');
+    const displayBetAmount = document.getElementById('displayBetAmount'); // New ID for bet display
     const currentBetInfo = document.getElementById('currentBetInfo');
-    const timerDisplay = document.getElementById('timerDisplay'); // Still exists but might be repurposed
-    const slotResultDisplay = document.getElementById('slotResult'); // Changed ID from diceResult
-    // const betButtons = document.querySelectorAll('.bet-button'); // Removed
+    const timerDisplay = document.getElementById('timerDisplay');
+    const slotResultDisplay = document.getElementById('slotResult');
     const betAmountBtns = document.querySelectorAll('.bet-amount-btn');
-    const spinButton = document.getElementById('startGameBtn'); // Renamed startGameBtn to spinButton
+    const spinButton = document.getElementById('startGameBtn');
     const modalOverlay = document.getElementById('modalOverlay');
     const resultModal = document.getElementById('resultModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -206,16 +219,19 @@
         document.getElementById('reel2'),
         document.getElementById('reel3')
     ];
+    const symbolLists = reels.map(reel => reel.querySelector('.symbol-list'));
+
 
     // ==== GAME VARS ====
-    // let selectedBet = null, selectedNumbers = []; // Removed
     let currentBetAmount = 100;
-    let gameLocked = false, gameStarted = false;
-    let timeLeft = 5; // Still exists but might be repurposed
-    let timerInterval = null;
+    let gameLocked = false; // Prevents re-spinning while one is in progress
 
     // Slot specific game variables
     const symbols = ['🍒', '🍋', '🔔', '⭐', '🍀', '7️⃣']; // Available slot symbols
+    const REEL_HEIGHT = 100; // Needs to match .reel span height in CSS
+    const SPIN_DURATION_BASE = 1500; // Base spin duration in ms
+    const SPIN_DURATION_OFFSET = 300; // Offset for each reel to stop progressively
+
     const winConditions = { // Example win conditions and multipliers
         '7️⃣7️⃣7️⃣': 10,
         '🍒🍒🍒': 5,
@@ -260,7 +276,6 @@
     function setControlsBasedOnWallet() {
         const disabled = !userAddress;
         betAmountBtns.forEach(btn => btn.disabled = disabled);
-        // betButtons.forEach(btn => btn.disabled = disabled); // Removed
         spinButton.disabled = disabled;
         depositBtn.disabled = disabled;
     }
@@ -281,27 +296,38 @@
         modalOverlay.classList.remove("show");
     }
 
+    // ==== REEL GENERATION ====
+    function populateReels() {
+        symbolLists.forEach(list => {
+            list.innerHTML = ''; // Clear existing symbols
+            // Add a few sets of symbols for smooth looping animation
+            for (let i = 0; i < 3; i++) { // Repeat symbols 3 times
+                symbols.forEach(symbol => {
+                    const span = document.createElement('span');
+                    span.textContent = symbol;
+                    list.appendChild(span);
+                });
+            }
+        });
+    }
+
     // ====== GAME LOGIC ======
     function initializeGame() {
-        clearInterval(timerInterval); // Still exists but less relevant for slot
-        timeLeft = 5; // Still exists but less relevant for slot
-        // selectedBet = null; // Removed
-        // selectedNumbers = []; // Removed
-        gameLocked = false;
-        gameStarted = false;
         currentBetAmount = 100;
-        // betButtons.forEach(btn => btn.classList.remove('selected')); // Removed
+        gameLocked = false;
         betAmountBtns.forEach(btn => btn.classList.remove('selected'));
         betAmountBtns.forEach(btn => {
             if (btn.dataset.amount === "100") btn.classList.add('selected');
         });
         spinButton.disabled = !userAddress;
         spinButton.style.display = "inline-block";
-        slotResultDisplay.innerHTML = 'Nhấn Quay để bắt đầu!'; // Changed text
-        timerDisplay.textContent = ""; // Not used for slot timer
+        slotResultDisplay.innerHTML = 'Nhấn Quay để bắt đầu!';
+        timerDisplay.textContent = "";
+        
+        populateReels(); // Regenerate symbols on init
         reels.forEach(reel => {
-            reel.classList.remove('rolling');
-            reel.querySelector('span').textContent = '🍒'; // Reset symbols
+            reel.classList.remove('spinning');
+            reel.style.transform = `translateY(0px)`; // Reset position
         });
         updateWalletDisplay();
         updateBetInfo();
@@ -309,65 +335,78 @@
         setControlsBasedOnWallet();
     }
     function updateBetInfo() {
-        currentBetInfo.textContent = `Cược: ${currentBetAmount ? currentBetAmount.toLocaleString() : 0} Xu`;
+        displayBetAmount.textContent = currentBetAmount.toLocaleString();
     }
 
     async function spinReels() {
         if (!userAddress) { showResultModal("Chưa kết nối ví", "Vui lòng kết nối ví.", "⚠️"); return; }
         if (currentBetAmount <= 0) { showResultModal("Thiếu cược", "Chọn số xu đặt cược!", "⚠️"); return; }
         if (currentBetAmount > currentBalance) { showResultModal("Thiếu xu", "Bạn không đủ xu!", "💸"); return; }
-        if (gameLocked) return; // Prevent multiple spins
+        if (gameLocked) return;
         gameLocked = true;
         spinButton.disabled = true;
         slotResultDisplay.textContent = "Đang quay...";
         timerDisplay.textContent = "";
 
-        // Start spinning animation
-        reels.forEach(reel => reel.classList.add('rolling'));
-
         try {
-            let response = await fetch(`${BACKEND_URL}/play/bet`, { // Still using /bet endpoint
+            // First, deduct the bet
+            let betResponse = await fetch(`${BACKEND_URL}/play/bet`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ wallet: userAddress, betAmount: currentBetAmount })
             });
-            let text = await response.text();
-            let data = null;
-            try { data = JSON.parse(text); } catch(e) {}
-            if (!response.ok || !data || !data.success) {
-                slotResultDisplay.innerHTML = "Lỗi!";
-                showResultModal("API lỗi", data && data.error ? data.error : text, "⚠️");
+            let betText = await betResponse.text();
+            let betData = null;
+            try { betData = JSON.parse(betText); } catch(e) {}
+            if (!betResponse.ok || !betData || !betData.success) {
+                slotResultDisplay.innerHTML = "Lỗi khi đặt cược!";
+                showResultModal("API lỗi", betData && betData.error ? betData.error : betText, "⚠️");
                 await refreshBalance();
-                reels.forEach(reel => reel.classList.remove('rolling'));
                 gameLocked = false;
                 spinButton.disabled = false;
                 return;
             }
-            await refreshBalance();
+            await refreshBalance(); // Update balance after deduction
 
-            // Simulate reel stopping after a delay
-            const results = [];
-            let stopDelay = 0;
-            for (let i = 0; i < reels.length; i++) {
-                setTimeout(() => {
-                    reels[i].classList.remove('rolling');
-                    const randomIndex = Math.floor(Math.random() * symbols.length);
-                    const symbol = symbols[randomIndex];
-                    reels[i].querySelector('span').textContent = symbol;
-                    results.push(symbol);
+            const finalResults = [];
+            let spinPromises = [];
 
-                    if (results.length === reels.length) {
-                        checkSlotResult(results);
-                    }
-                }, stopDelay + (i * 300)); // Stagger the stopping of reels
-                stopDelay += 500; // Delay for next reel to start stopping
-            }
+            reels.forEach((reel, index) => {
+                reel.classList.add('spinning'); // Add spinning class to disable transition
+                const targetSymbolIndex = Math.floor(Math.random() * symbols.length);
+                const targetSymbol = symbols[targetSymbolIndex];
+                finalResults.push(targetSymbol);
+
+                // Calculate spin distance and final position
+                // To make it look like it spins, we move it past a few cycles then stop at the target
+                const symbolCountPerCycle = symbols.length;
+                const baseSpinCycles = 2; // At least 2 full cycles
+                const finalStopPosition = (symbolCountPerCycle - targetSymbolIndex) * REEL_HEIGHT; // Position of the target symbol
+                const totalSpinDistance = (baseSpinCycles * symbolCountPerCycle * REEL_HEIGHT) + finalStopPosition;
+
+                // Set transform immediately for rapid "spinning" appearance
+                reel.style.transform = `translateY(-${totalSpinDistance}px)`;
+
+                spinPromises.push(new Promise(resolve => {
+                    setTimeout(() => {
+                        reel.classList.remove('spinning'); // Remove spinning class to re-enable transition for smooth stop
+                        // Set the exact position for the target symbol to align
+                        reel.style.transform = `translateY(-${finalStopPosition}px)`;
+                        resolve();
+                    }, SPIN_DURATION_BASE + (index * SPIN_DURATION_OFFSET));
+                }));
+            });
+
+            await Promise.all(spinPromises); // Wait for all reels to finish spinning
+
+            // After all reels have stopped, check the result
+            checkSlotResult(finalResults);
 
         } catch (e) {
             slotResultDisplay.innerHTML = "Lỗi!";
             showResultModal("Lỗi mạng/API", String(e), "⚠️");
             await refreshBalance();
-            reels.forEach(reel => reel.classList.remove('rolling'));
+            reels.forEach(reel => reel.classList.remove('spinning')); // Ensure spinning class is removed
             gameLocked = false;
             spinButton.disabled = false;
         }
@@ -378,7 +417,6 @@
         let winMultiplier = 0;
         const resultString = resultSymbols.join('');
 
-        // Check for winning combinations
         if (winConditions[resultString]) {
             isWinner = true;
             winMultiplier = winConditions[resultString];
@@ -387,7 +425,7 @@
         if (isWinner) {
             const winnings = currentBetAmount * winMultiplier;
             try {
-                let response = await fetch(`${BACKEND_URL}/play/win`, { // Still using /win endpoint
+                let response = await fetch(`${BACKEND_URL}/play/win`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ wallet: userAddress, winAmount: winnings })
@@ -414,7 +452,6 @@
         spinButton.disabled = false;
     }
 
-    // Removed betButtons.forEach logic as it's no longer relevant
     betAmountBtns.forEach(btn => btn.onclick = () => {
         if (gameLocked) return;
         betAmountBtns.forEach(b => b.classList.remove('selected'));
@@ -423,7 +460,7 @@
         updateBetInfo();
     });
 
-    spinButton.onclick = spinReels; // Changed to spinReels function
+    spinButton.onclick = spinReels;
 
     playAgainBtn.onclick = () => {
         initializeGame();
@@ -464,7 +501,7 @@
             }
         }
         setControlsBasedOnWallet();
-        initializeGame();
+        initializeGame(); // Call initializeGame to populate reels
     });
     window.addEventListener('focus', () => {
         refreshBalance();
