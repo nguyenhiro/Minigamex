@@ -545,7 +545,7 @@
     connectWalletBtn.onclick = connectWallet;
     async function connectWallet() {
         if (typeof window.ethereum === 'undefined') {
-            alert("Bạn cần cài MetaMask!");
+            alert("Bạn cần cài MetaMask! https://metamask.io/download");
             return;
         }
         try {
