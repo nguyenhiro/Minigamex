@@ -161,11 +161,11 @@
         <div class="info-blk" id="currentBetInfo">Cược: <span id="displayBetAmount">0</span> Xu</div>
         <span class="bet-input-label">Đặt cược:</span>
         <div class="bet-amount-group" id="betAmountGroup">
-            <button type="button" class="bet-amount-btn" data-amount="1">1</button>
+            <button type="button" class="bet-amount-btn" data-amount="2">2</button>
+            <button type="button" class="bet-amount-btn" data-amount="6">6</button>
             <button type="button" class="bet-amount-btn" data-amount="10">10</button>
-            <button type="button" class="bet-amount-btn" data-amount="50">50</button>
-            <button type="button" class="bet-amount-btn selected" data-amount="100">100</button>
-            <button type="button" class="bet-amount-btn" data-amount="500">500</button>
+            <button type="button" class="bet-amount-btn" data-amount="15">15</button>
+            <button type="button" class="bet-amount-btn" data-amount="20">20</button>
         </div>
         <button id="startGameBtn">Quay</button>
         <div id="timerDisplay"></div>
@@ -232,14 +232,14 @@
     const SPIN_DURATION_BASE = 1500; // Base spin duration in ms
     const SPIN_DURATION_OFFSET = 300; // Offset for each reel to stop progressively
 
-    const winConditions = { // Example win conditions and multipliers
-        '7️⃣7️⃣7️⃣': 10,
-        '🍒🍒🍒': 5,
-        '🍋🍋🍋': 3,
-        '🔔🔔🔔': 3,
-        '⭐⭐⭐': 2,
-        '🍀🍀🍀': 2,
-    };
+    // const winConditions = { // Example win conditions and multipliers
+    //     '7️⃣7️⃣7️⃣': 10,
+    //     '🍒🍒🍒': 5,
+    //     '🍋🍋🍋': 3,
+    //     '🔔🔔🔔': 3,
+    //     '⭐⭐⭐': 2,
+    //     '🍀🍀🍀': 2,
+    // };
 
     // ======= ĐỒNG BỘ XU =======
     async function refreshBalance() {
@@ -265,7 +265,7 @@
             connectWalletBtn.disabled = true;
             connectWalletBtn.classList.add('connected');
             walletBtnIcon.textContent = "🟢";
-            walletBtnText.textContent = "Đã kết nối";
+            walletBtnText = "Đã kết nối";
         } else {
             connectWalletBtn.disabled = false;
             connectWalletBtn.classList.remove('connected');
@@ -313,17 +313,17 @@
 
     // ====== GAME LOGIC ======
     function initializeGame() {
-        currentBetAmount = 100;
+        currentBetAmount = 2; // Default bet
         gameLocked = false;
         betAmountBtns.forEach(btn => btn.classList.remove('selected'));
         betAmountBtns.forEach(btn => {
-            if (btn.dataset.amount === "100") btn.classList.add('selected');
+            if (btn.dataset.amount === "2") btn.classList.add('selected'); // Select default
         });
         spinButton.disabled = !userAddress;
         spinButton.style.display = "inline-block";
         slotResultDisplay.innerHTML = 'Nhấn Quay để bắt đầu!';
         timerDisplay.textContent = "";
-        
+
         populateReels(); // Regenerate symbols on init
         reels.forEach(reel => {
             reel.classList.remove('spinning');
@@ -413,41 +413,67 @@
     }
 
     async function checkSlotResult(resultSymbols) {
-        let isWinner = false;
-        let winMultiplier = 0;
-        const resultString = resultSymbols.join('');
+        let winnings = 0;
+        let matchingSymbols = 1; // Default: at least one matching
 
-        if (winConditions[resultString]) {
-            isWinner = true;
-            winMultiplier = winConditions[resultString];
-        }
-
-        if (isWinner) {
-            const winnings = currentBetAmount * winMultiplier;
-            try {
-                let response = await fetch(`${BACKEND_URL}/play/win`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ wallet: userAddress, winAmount: winnings })
-                });
-                let text = await response.text();
-                let data = null;
-                try { data = JSON.parse(text); } catch(e){}
-                if (!response.ok || !data || !data.success) {
-                    showResultModal("API lỗi", data && data.error ? data.error : text, "⚠️");
-                } else {
-                    slotResultDisplay.innerHTML = `Thắng: ${winnings.toLocaleString()} Xu!`;
-                    showResultModal("Chúc mừng!", `Bạn thắng ${winnings.toLocaleString()} xu!`, "🎉");
-                }
-            } catch (e) {
-                showResultModal("API lỗi", String(e), "⚠️");
+        // Count matching symbols
+        if (resultSymbols[0] === resultSymbols[1]) {
+            matchingSymbols++;
+            if (resultSymbols[1] === resultSymbols[2]) {
+                matchingSymbols++;
             }
-            await refreshBalance();
-        } else {
-            slotResultDisplay.innerHTML = `Bạn đã thua ${currentBetAmount.toLocaleString()} Xu.`;
-            showResultModal("Thua rồi!", `Bạn đã thua ${currentBetAmount.toLocaleString()} xu.`, "😢");
-            await refreshBalance();
+        } else if (resultSymbols[1] === resultSymbols[2]) {
+            matchingSymbols = 2; // Only 2nd and 3rd match, 1st is different.
         }
+
+        // Calculate winnings based on bet and matching symbols
+        switch (currentBetAmount) {
+            case 2:
+                if (matchingSymbols === 1) winnings = 1;
+                else if (matchingSymbols === 2) winnings = 2;
+                else if (matchingSymbols === 3) winnings = 5;
+                break;
+            case 6:
+                if (matchingSymbols === 1) winnings = 3;
+                else if (matchingSymbols === 2) winnings = 6;
+                else if (matchingSymbols === 3) winnings = 15;
+                break;
+            case 10:
+                if (matchingSymbols === 1) winnings = 5;
+                else if (matchingSymbols === 2) winnings = 10;
+                else if (matchingSymbols === 3) winnings = 20;
+                break;
+            case 15:
+                if (matchingSymbols === 1) winnings = 7;
+                else if (matchingSymbols === 2) winnings = 15;
+                else if (matchingSymbols === 3) winnings = 25;
+                break;
+            case 20:
+                if (matchingSymbols === 1) winnings = 10;
+                else if (matchingSymbols === 2) winnings = 20;
+                else if (matchingSymbols === 3) winnings = 35;
+                break;
+        }
+
+        try {
+            let response = await fetch(`${BACKEND_URL}/play/win`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ wallet: userAddress, winAmount: winnings })
+            });
+            let text = await response.text();
+            let data = null;
+            try { data = JSON.parse(text); } catch(e){}
+            if (!response.ok || !data || !data.success) {
+                showResultModal("API lỗi", data && data.error ? data.error : text, "⚠️");
+            } else {
+                slotResultDisplay.innerHTML = `Thắng: ${winnings.toLocaleString()} Xu!`;
+                showResultModal("Chúc mừng!", `Bạn thắng ${winnings.toLocaleString()} xu!`, "🎉");
+            }
+        } catch (e) {
+            showResultModal("API lỗi", String(e), "⚠️");
+        }
+        await refreshBalance();
         gameLocked = false;
         spinButton.disabled = false;
     }
