@@ -129,7 +129,7 @@
         .modal {
             position: fixed;
             left: 50%;
-            top: 35%; /* Di chuyển modal lên cao hơn */
+            top: 25%; /* Di chuyển modal lên cao hơn nữa */
             transform: translate(-50%,-50%);
             background: white;
             min-width: 280px;
@@ -163,7 +163,7 @@
                 100% { transform: translateY(-800px); }
             }
             .modal { /* Adjust modal position for smaller screens too */
-                top: 25%;
+                top: 20%; /* Di chuyển modal lên cao hơn nữa trên mobile */
             }
         }
     </style>
@@ -246,10 +246,10 @@
     // Slot specific game variables
     const symbols = ['🍒', '🍋', '🔔', '⭐', '🍀', '7️⃣'];
     const REEL_HEIGHT = 100;
-    const SPIN_DURATION_BASE = 1000;
-    const SPIN_DURATION_OFFSET = 200;
-    const FINAL_STOP_DURATION = 800; // Thời gian thả chậm cho mỗi cuộn (mới)
-    const RESULT_DISPLAY_DELAY = 1000; // Thời gian chờ trước khi hiện modal (mới)
+    const SPIN_DURATION_BASE = 1500; // Tăng thời gian quay cơ bản một chút
+    const SPIN_DURATION_OFFSET = 300; // Tăng offset để các cuộn dừng cách nhau rõ hơn
+    const FINAL_STOP_TRANSITION_DURATION = 1000; // Thời gian thả chậm cho mỗi cuộn khi dừng (tăng lên 1 giây)
+    const RESULT_DISPLAY_DELAY = 1500; // Thời gian chờ trước khi hiện modal (tăng lên 1.5 giây)
 
     // ======= ĐỒNG BỘ XU =======
     async function refreshBalance() {
@@ -261,7 +261,7 @@
         try {
             const res = await fetch(`${BACKEND_URL}/balance/${userAddress}`);
             if (res.ok) {
-                const data = await res.json();
+                const data = res.json();
                 currentBalance = data.coins;
             } else currentBalance = 0;
         } catch { currentBalance = 0; }
@@ -308,9 +308,8 @@
 
     // ==== REEL GENERATION ====
     function populateReels() {
-        // Tạo đủ symbols để cuộn mượt mà. 5 lần lặp lại là đủ.
         const tempSymbols = [];
-        for(let i = 0; i < 5; i++) {
+        for(let i = 0; i < 5; i++) { // Generate enough symbols to make the spin look continuous
             tempSymbols.push(...symbols);
         }
 
@@ -341,8 +340,8 @@
         reels.forEach(reel => {
             const symbolList = reel.querySelector('.symbol-list');
             reel.classList.remove('spinning');
-            symbolList.style.transition = 'none'; // Tắt transition để reset ngay
-            symbolList.style.transform = `translateY(0px)`; // Reset position
+            symbolList.style.transition = 'none';
+            symbolList.style.transform = `translateY(0px)`;
         });
         updateWalletDisplay();
         updateBetInfo();
@@ -386,7 +385,7 @@
             const finalResults = [];
             let spinPromises = [];
 
-            populateReels(); // Đảm bảo các reel có đủ biểu tượng để quay mượt
+            populateReels();
 
             reels.forEach((reel, index) => {
                 const symbolList = reel.querySelector('.symbol-list');
@@ -396,44 +395,48 @@
 
                 // Reset transition and position for new spin
                 symbolList.style.transition = 'none';
-                symbolList.style.transform = `translateY(0)`; // Đặt về vị trí 0 để animation bắt đầu nhất quán
+                // Đặt vị trí ban đầu giả định ở một điểm "cao" trong danh sách biểu tượng để khi animation
+                // bắt đầu, nó sẽ cuộn xuống và trông như đang "chạy"
+                symbolList.style.transform = `translateY(-${symbols.length * 2 * REEL_HEIGHT}px)`;
 
-                setTimeout(() => { // Small delay to allow reset to apply before starting spin
-                    reel.classList.add('spinning'); // Bắt đầu animation quay nhanh (CSS)
 
-                    // Tính toán vị trí dừng cuối cùng dựa trên biểu tượng mục tiêu
-                    // Chúng ta cần di chuyển qua một số chu kỳ để tạo cảm giác "quay"
-                    const totalCyclesToSpin = 3; // Số vòng quay ảo trước khi dừng
-                    const targetOffset = symbols.indexOf(targetSymbol); // Vị trí của symbol trong mảng `symbols`
-                    const finalTranslateY = -((symbols.length * totalCyclesToSpin) + targetOffset) * REEL_HEIGHT;
+                setTimeout(() => {
+                    reel.classList.add('spinning'); // Bắt đầu animation CSS quay nhanh
+                    
+                    // Tính toán vị trí dừng cuối cùng.
+                    // Chúng ta cần di chuyển qua một số chu kỳ + đến vị trí của symbol mục tiêu
+                    const baseCycles = 5; // Số vòng quay ảo tối thiểu
+                    const totalSymbolsToPass = (symbols.length * baseCycles) + targetSymbolIndex;
+                    const finalTranslateY = -(totalSymbolsToPass * REEL_HEIGHT);
 
-                    // Apply the ease-out transition to slow down and stop
+                    // Áp dụng transition để cuộn chậm lại và dừng
                     symbolList.style.transition = `transform ${SPIN_DURATION_BASE + (index * SPIN_DURATION_OFFSET)}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
                     symbolList.style.transform = `translateY(${finalTranslateY}px)`;
 
+                    // Promise để chờ reel dừng hẳn
                     spinPromises.push(new Promise(resolve => {
                         setTimeout(() => {
-                            // Khi đã dừng hoàn toàn (transition kết thúc)
-                            reel.classList.remove('spinning'); // Dừng animation quay nhanh (CSS)
-                            // Đặt lại symbol-list chỉ với một symbol duy nhất là kết quả
+                            // Dừng animation CSS
+                            reel.classList.remove('spinning');
+                            // Ngay lập tức đặt lại DOM để chỉ hiển thị biểu tượng kết quả cuối cùng
                             symbolList.innerHTML = '';
                             const resultSpan = document.createElement('span');
                             resultSpan.textContent = targetSymbol;
                             symbolList.appendChild(resultSpan);
-                            symbolList.style.transition = 'none'; // Đảm bảo không có transition khi reset
-                            symbolList.style.transform = `translateY(0px)`; // Đặt về vị trí hiển thị chính giữa
+                            symbolList.style.transition = 'none'; // Tắt transition để đặt lại ngay lập tức
+                            symbolList.style.transform = `translateY(0px)`; // Đặt về vị trí chính giữa
                             resolve();
                         }, SPIN_DURATION_BASE + (index * SPIN_DURATION_OFFSET));
                     }));
-                }, 50); // Small delay to let initial translateY(0) apply
+                }, 50); // Small delay to allow initial translateY to apply
             });
 
             await Promise.all(spinPromises); // Chờ tất cả các cuộn dừng hoàn toàn
 
-            // Thêm độ trễ trước khi hiển thị modal
+            // Thêm độ trễ để người chơi nhìn kết quả trên cuộn lâu hơn
             setTimeout(() => {
                 checkSlotResult(finalResults);
-            }, RESULT_DISPLAY_DELAY); // Chờ 1 giây sau khi reels dừng
+            }, RESULT_DISPLAY_DELAY);
 
         } catch (e) {
             slotResultDisplay.innerHTML = "Lỗi!";
