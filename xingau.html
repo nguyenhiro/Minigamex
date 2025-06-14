@@ -265,11 +265,11 @@
         selectedNumbers = [];
         gameLocked = false;
         gameStarted = false;
-        currentBetAmount = 100;
+        currentBetAmount = 0;
         betButtons.forEach(btn => btn.classList.remove('selected'));
         betAmountBtns.forEach(btn => btn.classList.remove('selected'));
         betAmountBtns.forEach(btn => {
-            if (btn.dataset.amount === "100") btn.classList.add('selected');
+            if (btn.dataset.amount === "0") btn.classList.add('selected');
         });
         startGameBtn.disabled = !userAddress;
         startGameBtn.style.display = "inline-block";
