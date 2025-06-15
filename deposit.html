@@ -54,10 +54,29 @@
       <div id="withdrawStatus" class="status-message"></div>
     </div>
   </div>
-
   <script>
-    const BACKEND_URL = "http://192.168.100.193:3000"; // ✅ Địa chỉ IP backend sửa đúng
+    // Hàm lấy query param an toàn
+    function getQueryParam(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
 
+    // Gán sự kiện khi DOM đã sẵn sàng
+    document.addEventListener('DOMContentLoaded', function () {
+      // Xử lý nút quay lại về đúng game dựa vào ?from=...
+      document.getElementById('backBtn').onclick = function() {
+        const from = getQueryParam('from');
+        if (from === 'xingau') {
+          window.location.href = "https://nguyenhiro.github.io/Minigamex/xingau.html";
+        } else if (from === 'duck' || from === 'gameduavit') {
+          window.location.href = "https://nguyenhiro.github.io/Minigamex/gameduavit.html";
+        } else if (from === 'slotgame' || from === 'slotgame') {
+          window.location.href = "https://nguyenhiro.github.io/Minigamex/slotgame.html";
+        }
+      };
+    });
+
+    const BACKEND_URL = "http://localhost:3000";
     const RAW_GAME_WALLET_ADDRESS = "0xC5240a2eBFF7a44b9707D1fE8A593c9468bED571";
     const NATIVE_COIN_DECIMALS = 18;
 
@@ -76,6 +95,7 @@
     let userAddress = null;
     let GAME_WALLET_CHECKSUM_ADDRESS = RAW_GAME_WALLET_ADDRESS;
 
+    // Lấy số xu backend
     async function refreshBalance() {
       if (!userAddress) {
         duckCoinBalanceDisplay.innerText = "0";
@@ -94,6 +114,7 @@
       }
     }
 
+    // Kết nối ví
     async function connectWallet() {
       if (typeof window.ethereum === 'undefined') {
         alert("Bạn cần cài MetaMask!");
@@ -115,6 +136,7 @@
       }
     }
 
+    // Gửi Native Coin MTT
     async function sendNativeCoin() {
       if (!userAddress || !signer) {
         alert("Vui lòng kết nối ví MetaMask trước!");
@@ -146,6 +168,7 @@
       }
     }
 
+    // Gửi transaction hash xác nhận nạp thủ công
     async function confirmManualDeposit() {
       if (!userAddress) {
         alert("Vui lòng kết nối ví MetaMask trước!");
@@ -159,6 +182,7 @@
       await confirmDepositWithBackend(txHash);
     }
 
+    // Xác nhận nạp token với backend
     async function confirmDepositWithBackend(txHash) {
       depositStatusMessage.className = 'status-message';
       depositStatusMessage.innerText = "Đang xác nhận với máy chủ...";
@@ -168,15 +192,20 @@
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({wallet: userAddress, txHash: txHash})
         });
-        const data = await response.json();
-        if (response.ok && data.success) {
-          depositStatusMessage.className = 'status-message success';
-          depositStatusMessage.innerText = `Nạp thành công! Đã thêm ${data.coinsAdded} xu. Tổng xu: ${data.totalCoins}`;
-          transactionHashInput.value = '';
-          await refreshBalance();
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            depositStatusMessage.className = 'status-message success';
+            depositStatusMessage.innerText = `Nạp thành công! Đã thêm ${data.coinsAdded} xu. Tổng xu: ${data.totalCoins}`;
+            transactionHashInput.value = '';
+            await refreshBalance();
+          } else {
+            depositStatusMessage.className = 'status-message error';
+            depositStatusMessage.innerText = "Xác nhận thất bại: " + (data.error || "Lỗi không xác định");
+          }
         } else {
           depositStatusMessage.className = 'status-message error';
-          depositStatusMessage.innerText = "Xác nhận thất bại: " + (data.error || "Lỗi không xác định");
+          depositStatusMessage.innerText = "Máy chủ trả về lỗi!";
         }
       } catch (e) {
         depositStatusMessage.className = 'status-message error';
@@ -184,6 +213,7 @@
       }
     }
 
+    // Rút tiền
     async function withdrawNativeCoin() {
       if (!userAddress) {
         alert("Vui lòng kết nối ví!");
@@ -202,14 +232,19 @@
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({wallet: userAddress, amount: amount})
         });
-        const data = await response.json();
-        if (response.ok && data.success) {
-          withdrawStatusMessage.className = 'status-message success';
-          withdrawStatusMessage.innerText = `Rút thành công! Đã rút ${data.coinsWithdrawn} xu. Tổng còn lại: ${data.totalCoins}`;
-          await refreshBalance();
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            withdrawStatusMessage.className = 'status-message success';
+            withdrawStatusMessage.innerText = `Rút thành công! Đã rút ${data.coinsWithdrawn} xu. Tổng còn lại: ${data.totalCoins}`;
+            await refreshBalance();
+          } else {
+            withdrawStatusMessage.className = 'status-message error';
+            withdrawStatusMessage.innerText = "Rút thất bại: " + (data.error || "Lỗi không xác định");
+          }
         } else {
           withdrawStatusMessage.className = 'status-message error';
-          withdrawStatusMessage.innerText = "Rút thất bại: " + (data.error || "Lỗi không xác định");
+          withdrawStatusMessage.innerText = "Máy chủ trả về lỗi!";
         }
       } catch (e) {
         withdrawStatusMessage.className = 'status-message error';
@@ -217,8 +252,10 @@
       }
     }
 
+    // Đồng bộ số xu khi chuyển tab/trang (chỉ cho TRANG THANH TOÁN, không liên kết sang trang game)
     window.addEventListener('focus', refreshBalance);
 
+    // Auto connect nếu đã có tài khoản trước đó
     document.addEventListener('DOMContentLoaded', async () => {
       if (typeof ethers !== 'undefined' && typeof ethers.utils !== 'undefined') {
         try {
