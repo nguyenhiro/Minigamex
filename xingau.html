@@ -366,6 +366,7 @@
         if (selectedBet === 'tai' && result >= 4) { isWinner = true; winMultiplier = 2; }
         else if (selectedBet === 'xiu' && result <= 3) { isWinner = true; winMultiplier = 2; }
         else if (selectedBet === 'number' && selectedNumbers.includes(result)) { isWinner = true; winMultiplier = 5; }
+
         if (isWinner) {
             const winnings = currentBetAmount * winMultiplier;
             try {
@@ -380,14 +381,26 @@
                 if (!response.ok || !data || !data.success) {
                     showResultModal("API lỗi", data && data.error ? data.error : text, "⚠️");
                 } else {
-                    showResultModal("Chúc mừng!", `Bạn thắng ${winnings.toLocaleString()} xu!`, "🎉");
+                    showResultModal(
+                        "Chúc mừng!",
+                        `Bạn thắng ${winnings.toLocaleString()} xu!
+
+Kết quả xúc xắc: ${result}`,
+                        "🎉"
+                    );
                 }
             } catch (e) {
                 showResultModal("API lỗi", String(e), "⚠️");
             }
             await refreshBalance();
         } else {
-            showResultModal("Thua rồi!", `Bạn đã thua ${currentBetAmount.toLocaleString()} xu.`, "😢");
+            showResultModal(
+                "Thua rồi!",
+                `Bạn đã thua ${currentBetAmount.toLocaleString()} xu.
+
+Kết quả xúc xắc: ${result}`,
+                "😢"
+            );
             await refreshBalance();
         }
         gameStarted = false;
