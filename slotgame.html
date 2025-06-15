@@ -471,28 +471,28 @@
         // Calculate winnings based on bet and matching symbols
         switch (currentBetAmount) {
             case 2:
-                if (matchingSymbolsCount === 1) winnings = 1;
-                else if (matchingSymbolsCount === 2) winnings = 2;
-                else if (matchingSymbolsCount === 3) winnings = 5;
+                if (matchingSymbolsCount === 1) winnings = 0;
+                else if (matchingSymbolsCount === 2) winnings = 4;
+                else if (matchingSymbolsCount === 3) winnings = 10;
                 break;
             case 6:
-                if (matchingSymbolsCount === 1) winnings = 3;
-                else if (matchingSymbolsCount === 2) winnings = 5;
+                if (matchingSymbolsCount === 1) winnings = 0;
+                else if (matchingSymbolsCount === 2) winnings = 12;
                 else if (matchingSymbolsCount === 3) winnings = 30;
                 break;
             case 10:
-                if (matchingSymbolsCount === 1) winnings = 5;
-                else if (matchingSymbolsCount === 2) winnings = 9;
+                if (matchingSymbolsCount === 1) winnings = 0;
+                else if (matchingSymbolsCount === 2) winnings = 20;
                 else if (matchingSymbolsCount === 3) winnings = 50;
                 break;
             case 15:
-                if (matchingSymbolsCount === 1) winnings = 7;
-                else if (matchingSymbolsCount === 2) winnings = 14;
+                if (matchingSymbolsCount === 1) winnings = 0;
+                else if (matchingSymbolsCount === 2) winnings = 30;
                 else if (matchingSymbolsCount === 3) winnings = 70;
                 break;
             case 20:
-                if (matchingSymbolsCount === 1) winnings = 10;
-                else if (matchingSymbolsCount === 2) winnings = 19;
+                if (matchingSymbolsCount === 1) winnings = 0;
+                else if (matchingSymbolsCount === 2) winnings = 40;
                 else if (matchingSymbolsCount === 3) winnings = 100;
                 break;
             default:
