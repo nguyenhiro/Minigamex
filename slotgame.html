@@ -54,7 +54,7 @@
     }
     .reel {
       width: 80px;
-      height: 800px; /* 8 symbols * 100px */
+      height: 800px;
       border: 2px solid #ccc;
       background: #fff;
       border-radius: 5px;
@@ -75,12 +75,26 @@
       align-items: center;
       font-size: 2.5rem;
     }
-
     #slotResult {
       margin-top: 10px;
       font-weight: bold;
       font-size: 1.4rem;
       color: #333;
+    }
+    .result-popup {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid #10B981;
+      padding: 20px 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #10B981;
+      display: none;
+      z-index: 9999;
     }
   </style>
 </head>
@@ -111,184 +125,191 @@
     </div>
     <div id="slotResult">Nhấn Quay để bắt đầu!</div>
   </div>
+  <div class="result-popup" id="popupResult">🎉 Bạn thắng 50 xu!</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.0/dist/ethers.umd.min.js"></script>
   <script>
-const BACKEND_URL = "http://localhost:3000"; // Đổi nếu bạn đang dùng server khác
-const connectWalletBtn = document.getElementById('connectWalletBtn');
-const walletBtnText = document.getElementById('walletBtnText');
-const walletBtnIcon = document.getElementById('walletBtnIcon');
-const depositBtn = document.getElementById('depositBtn');
-const currentBalanceDisplay = document.getElementById('currentBalance');
-const betAmountBtns = document.querySelectorAll('.bet-amount-btn');
-const spinButton = document.getElementById('startGameBtn');
-const displayBetAmount = document.getElementById('displayBetAmount');
-const slotResultDisplay = document.getElementById('slotResult');
-const reels = [...Array(5)].map((_, i) => document.getElementById(`reel${i + 1}`));
-const symbolLists = reels.map(reel => reel.querySelector('.symbol-list'));
+    const BACKEND_URL = "http://localhost:3000";
+    const connectWalletBtn = document.getElementById('connectWalletBtn');
+    const walletBtnText = document.getElementById('walletBtnText');
+    const walletBtnIcon = document.getElementById('walletBtnIcon');
+    const depositBtn = document.getElementById('depositBtn');
+    const currentBalanceDisplay = document.getElementById('currentBalance');
+    const betAmountBtns = document.querySelectorAll('.bet-amount-btn');
+    const spinButton = document.getElementById('startGameBtn');
+    const displayBetAmount = document.getElementById('displayBetAmount');
+    const slotResultDisplay = document.getElementById('slotResult');
+    const popupResult = document.getElementById('popupResult');
+    const reels = [...Array(5)].map((_, i) => document.getElementById(`reel${i + 1}`));
+    const symbolLists = reels.map(reel => reel.querySelector('.symbol-list'));
 
-let userAddress = null;
-let provider, signer;
-let currentBalance = 0;
-let currentBetAmount = 2;
-let gameLocked = false;
+    let userAddress = null;
+    let provider, signer;
+    let currentBalance = 0;
+    let currentBetAmount = 2;
+    let gameLocked = false;
 
-const symbols = ['🍒', '🍋', '🔔', '⭐', '🍀', '7️⃣'];
-const REEL_HEIGHT = 100;
-const SPIN_DURATION = 800;
+    const symbols = ['🍒', '🍋', '🔔', '⭐', '🍀', '7️⃣'];
+    const REEL_HEIGHT = 100;
+    const SPIN_DURATION = 800;
 
-function updateWalletUI() {
-  if (userAddress) {
-    connectWalletBtn.disabled = true;
-    connectWalletBtn.classList.add('connected');
-    walletBtnIcon.textContent = "🟢";
-    walletBtnText.textContent = "Đã kết nối";
-  } else {
-    connectWalletBtn.disabled = false;
-    connectWalletBtn.classList.remove('connected');
-    walletBtnIcon.textContent = "🔗";
-    walletBtnText.textContent = "Kết nối ví";
-  }
-}
-function updateWalletDisplay() {
-  currentBalanceDisplay.textContent = currentBalance.toLocaleString();
-}
-async function refreshBalance() {
-  if (!userAddress) return;
-  try {
-    const res = await fetch(`${BACKEND_URL}/balance/${userAddress}`);
-    const data = await res.json();
-    currentBalance = data.coins || 0;
-  } catch { currentBalance = 0; }
-  updateWalletDisplay();
-}
-depositBtn.onclick = () => {
-  window.location.href = "https://nguyenhiro.github.io/Minigamex/deposit.html?from=slotgame";
-};
-connectWalletBtn.onclick = async () => {
-  if (typeof window.ethereum === 'undefined') {
-    alert("Bạn cần cài MetaMask!");
-    return;
-  }
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if (accounts.length > 0) {
-      userAddress = accounts[0].toLowerCase();
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      signer = provider.getSigner(userAddress);
-      updateWalletUI();
-      await refreshBalance();
+    function updateWalletUI() {
+      if (userAddress) {
+        connectWalletBtn.disabled = true;
+        connectWalletBtn.classList.add('connected');
+        walletBtnIcon.textContent = "🟢";
+        walletBtnText.textContent = "Đã kết nối";
+      } else {
+        connectWalletBtn.disabled = false;
+        connectWalletBtn.classList.remove('connected');
+        walletBtnIcon.textContent = "🔗";
+        walletBtnText.textContent = "Kết nối ví";
+      }
     }
-  } catch (e) {
-    alert("Lỗi khi kết nối ví: " + e.message);
-  }
-};
-
-function populateReels() {
-  const symbolsToShow = [];
-  for (let i = 0; i < 8; i++) symbolsToShow.push(...symbols);
-  symbolLists.forEach(list => {
-    list.innerHTML = '';
-    symbolsToShow.forEach(sym => {
-      const el = document.createElement('span');
-      el.textContent = sym;
-      list.appendChild(el);
-    });
-  });
-}
-function updateBetInfo() {
-  displayBetAmount.textContent = currentBetAmount.toLocaleString();
-}
-function checkResult(symbolArray) {
-  let maxMatch = 1;
-  let currentMatch = 1;
-  for (let i = 1; i < symbolArray.length; i++) {
-    if (symbolArray[i] === symbolArray[i - 1]) {
-      currentMatch++;
-      if (currentMatch > maxMatch) maxMatch = currentMatch;
-    } else {
-      currentMatch = 1;
+    function updateWalletDisplay() {
+      currentBalanceDisplay.textContent = currentBalance.toLocaleString();
     }
-  }
-  return maxMatch;
-}
-async function spinReels() {
-  if (!userAddress) return alert("Chưa kết nối ví");
-  if (currentBetAmount > currentBalance) return alert("Không đủ xu");
-  if (gameLocked) return;
-  gameLocked = true;
-  spinButton.disabled = true;
-  slotResultDisplay.textContent = "Đang quay...";
-  await fetch(`${BACKEND_URL}/play/bet`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ wallet: userAddress, betAmount: currentBetAmount })
-  });
+    async function refreshBalance() {
+      if (!userAddress) return;
+      try {
+        const res = await fetch(`${BACKEND_URL}/balance/${userAddress}`);
+        const data = await res.json();
+        currentBalance = data.coins || 0;
+      } catch { currentBalance = 0; }
+      updateWalletDisplay();
+    }
+    depositBtn.onclick = () => {
+      window.location.href = "https://nguyenhiro.github.io/Minigamex/deposit.html?from=slotgame";
+    };
+    connectWalletBtn.onclick = async () => {
+      if (typeof window.ethereum === 'undefined') {
+        alert("Bạn cần cài MetaMask!");
+        return;
+      }
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts.length > 0) {
+          userAddress = accounts[0].toLowerCase();
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          signer = provider.getSigner(userAddress);
+          updateWalletUI();
+          await refreshBalance();
+        }
+      } catch (e) {
+        alert("Lỗi khi kết nối ví: " + e.message);
+      }
+    };
 
-  await refreshBalance();
-
-  const finalResults = [];
-  populateReels();
-
-  const promises = reels.map((reel, i) => {
-    const list = symbolLists[i];
-    const targetSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-    finalResults.push(targetSymbol);
-    const totalSpin = symbols.length * 4 + symbols.indexOf(targetSymbol);
-    const finalY = -REEL_HEIGHT * totalSpin;
-    list.style.transition = `transform ${SPIN_DURATION + i * 150}ms ease-out`;
-    list.style.transform = `translateY(${finalY}px)`;
-
-    return new Promise(resolve => {
-      setTimeout(() => {
+    function populateReels() {
+      const symbolsToShow = [];
+      for (let i = 0; i < 8; i++) symbolsToShow.push(...symbols);
+      symbolLists.forEach(list => {
         list.innerHTML = '';
-        const span = document.createElement('span');
-        span.textContent = targetSymbol;
-        list.appendChild(span);
-        list.style.transition = 'none';
-        list.style.transform = `translateY(0px)`;
-        resolve();
-      }, SPIN_DURATION + i * 150 + 100);
+        symbolsToShow.forEach(sym => {
+          const el = document.createElement('span');
+          el.textContent = sym;
+          list.appendChild(el);
+        });
+      });
+    }
+    function updateBetInfo() {
+      displayBetAmount.textContent = currentBetAmount.toLocaleString();
+    }
+    function checkResult(symbolArray) {
+      let maxMatch = 1;
+      let currentMatch = 1;
+      for (let i = 1; i < symbolArray.length; i++) {
+        if (symbolArray[i] === symbolArray[i - 1]) {
+          currentMatch++;
+          if (currentMatch > maxMatch) maxMatch = currentMatch;
+        } else {
+          currentMatch = 1;
+        }
+      }
+      return maxMatch;
+    }
+    function showResultPopup(text, isWin) {
+      popupResult.textContent = text;
+      popupResult.style.borderColor = isWin ? '#10B981' : '#dc2626';
+      popupResult.style.color = isWin ? '#10B981' : '#dc2626';
+      popupResult.style.display = 'block';
+      setTimeout(() => popupResult.style.display = 'none', 3000);
+    }
+    async function spinReels() {
+      if (!userAddress) return alert("Chưa kết nối ví");
+      if (currentBetAmount > currentBalance) return alert("Không đủ xu");
+      if (gameLocked) return;
+      gameLocked = true;
+      spinButton.disabled = true;
+      slotResultDisplay.textContent = "Đang quay...";
+      await fetch(`${BACKEND_URL}/play/bet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet: userAddress, betAmount: currentBetAmount })
+      });
+
+      await refreshBalance();
+
+      const finalResults = [];
+      populateReels();
+
+      const promises = reels.map((reel, i) => {
+        const list = symbolLists[i];
+        const targetSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+        finalResults.push(targetSymbol);
+        const totalSpin = symbols.length * 4 + symbols.indexOf(targetSymbol);
+        const finalY = -REEL_HEIGHT * totalSpin;
+        list.style.transition = `transform ${SPIN_DURATION + i * 150}ms ease-out`;
+        list.style.transform = `translateY(${finalY}px)`;
+
+        return new Promise(resolve => {
+          setTimeout(() => {
+            list.style.transition = 'none';
+            resolve();
+          }, SPIN_DURATION + i * 150 + 100);
+        });
+      });
+
+      await Promise.all(promises);
+      const matchCount = checkResult(finalResults);
+
+      let win = 0;
+      if (matchCount === 2) win = currentBetAmount;
+      else if (matchCount === 3) win = currentBetAmount * 2;
+      else if (matchCount === 4) win = currentBetAmount * 4;
+      else if (matchCount === 5) win = currentBetAmount * 10;
+
+      if (win > 0) {
+        slotResultDisplay.textContent = `🎉 Thắng ${win.toLocaleString()} xu!`;
+        await fetch(`${BACKEND_URL}/play/win`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet: userAddress, winAmount: win })
+        });
+        showResultPopup(`🎉 Bạn thắng ${win} xu!`, true);
+      } else {
+        slotResultDisplay.textContent = `😢 Bạn đã thua ${currentBetAmount.toLocaleString()} xu.`;
+        showResultPopup(`😢 Bạn thua ${currentBetAmount} xu`, false);
+      }
+
+      await refreshBalance();
+      gameLocked = false;
+      spinButton.disabled = false;
+    }
+    betAmountBtns.forEach(btn => {
+      btn.onclick = () => {
+        betAmountBtns.forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        currentBetAmount = parseInt(btn.dataset.amount);
+        updateBetInfo();
+      };
     });
-  });
-
-  await Promise.all(promises);
-  const matchCount = checkResult(finalResults);
-
-  let win = 0;
-  if (matchCount === 2) win = currentBetAmount;
-  else if (matchCount === 3) win = currentBetAmount * 2;
-  else if (matchCount === 4) win = currentBetAmount * 4;
-  else if (matchCount === 5) win = currentBetAmount * 10;
-
-  if (win > 0) {
-    slotResultDisplay.textContent = `🎉 Thắng ${win.toLocaleString()} xu!`;
-    await fetch(`${BACKEND_URL}/play/win`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wallet: userAddress, winAmount: win })
+    spinButton.onclick = spinReels;
+    window.addEventListener('DOMContentLoaded', () => {
+      updateWalletUI();
+      updateBetInfo();
+      populateReels();
     });
-  } else {
-    slotResultDisplay.textContent = `😢 Bạn đã thua ${currentBetAmount.toLocaleString()} xu.`;
-  }
-
-  await refreshBalance();
-  gameLocked = false;
-  spinButton.disabled = false;
-}
-betAmountBtns.forEach(btn => {
-  btn.onclick = () => {
-    betAmountBtns.forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    currentBetAmount = parseInt(btn.dataset.amount);
-    updateBetInfo();
-  };
-});
-spinButton.onclick = spinReels;
-window.addEventListener('DOMContentLoaded', () => {
-  updateWalletUI();
-  updateBetInfo();
-  populateReels();
-});
-</script>
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.0/dist/ethers.umd.min.js"></script>
+  </script>
 </body>
 </html>
