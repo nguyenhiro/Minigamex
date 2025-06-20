@@ -1,209 +1,604 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>MiniGamex Slot 5 Reels</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background: url('7.png') center/cover no-repeat fixed;
-      padding: 30px;
-      text-align: center;
-    }
-    .container {
-      background: rgba(255,255,255,0.93);
-      margin: auto;
-      padding: 2rem 1.5rem;
-      border-radius: 1rem;
-      max-width: 700px;
-      box-shadow: 0 10px 40px #0003, 0 2px 10px #2a3e4c44;
-    }
-    h1 { color: #f59e42; font-size: 2rem; }
-    .balance-blk { font-size: 1.12rem; margin-bottom: 10px; }
-    .balance-blk span { color: #10B981; font-weight: bold; }
+    <meta charset="UTF-8">
+    <title>MiniGamex Slot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: url('7.png') center/cover no-repeat fixed;
+            color: #222;
+            text-align: center;
+            padding: 30px;
+        }
+        .container {
+            background: rgba(255,255,255,0.93);
+            margin: auto;
+            padding: 2rem 1.5rem 2.5rem 1.5rem;
+            border-radius: 1rem;
+            max-width: 420px;
+            box-shadow: 0 10px 40px #0003, 0 2px 10px #2a3e4c44;
+            position: relative;
+        }
+        h1 { color: #f59e42; font-size: 2rem; letter-spacing: 2px; text-shadow: 0 2px 8px #0004; }
+        .balance-blk { margin: 0 0 18px 0; font-size:1.12rem; }
+        .balance-blk span { color: #10B981; font-weight: bold; }
+        #connectWalletBtn, #depositBtn {
+            font-size: 1rem; font-weight: bold;
+            padding: 0.55rem 1.2rem; border: none; border-radius: 7px;
+            margin: 0 5px 12px 5px;
+        }
+        #connectWalletBtn[disabled], #depositBtn[disabled] { background: #ccc; color: #666; cursor: not-allowed; }
+        #connectWalletBtn { background: #6366f1; color: #fff; }
+        #connectWalletBtn.connected { background: #10B981 !important; color: #fff !important; }
+        #depositBtn { background: #f59e42; color: #000; }
+        .bet-amount-group { display: flex; justify-content: center; gap: 10px; margin: 18px 0; flex-wrap: wrap; }
+        .bet-amount-btn, #startGameBtn {
+            padding: 12px 18px; border: none; border-radius: 7px; font-size: 1rem; font-weight: bold;
+            cursor: pointer; background: #4caf50; color: #fff; margin-bottom: 3px; min-width: 60px;
+            transition: background 0.18s, transform 0.12s;
+        }
+        .bet-amount-btn.selected { background: #f59e42; color: #222; }
+        .bet-amount-btn:active, #startGameBtn:active { transform: scale(0.93);}
+        #startGameBtn { margin: 14px 0 10px 0; background: #10B981; }
+        #startGameBtn:disabled { background: #9ca3af !important; }
+        .info-blk {
+            margin: 10px 0 0 0;
+            font-size: 1.03rem;
+            color: #334155;
+        }
+        #timerDisplay {
+            color: #f59e42;
+            font-weight: bold;
+            margin: 0 0 12px 0;
+            font-size: 1.15rem;
+            min-height: 28px;
+            letter-spacing: 1px;
+        }
+        .slot-machine {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 120px;
+            margin: 20px 0;
+            background: #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+        }
+        .reel {
+            width: 80px;
+            height: 100px;
+            border: 2px solid #ccc;
+            margin: 0 5px;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            font-size: 3.5rem;
+            background: #fff;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            /* transition: transform 0.3s ease-out; removed, handled by JS for specific stopping effect */
+        }
+        .reel.spinning .symbol-list {
+            animation: spinReelAnimation 0.1s linear infinite;
+        }
+        .reel.spinning {
+            transition: none;
+        }
 
-    #connectWalletBtn, #depositBtn, #startGameBtn, .bet-amount-btn {
-      font-size: 1rem; font-weight: bold;
-      padding: 10px 16px; margin: 6px; border: none; border-radius: 7px;
-      cursor: pointer;
-    }
-    #connectWalletBtn { background: #6366f1; color: white; }
-    #connectWalletBtn.connected { background: #10B981 !important; }
-    #depositBtn { background: #f59e42; color: black; }
-    #startGameBtn { background: #10B981; color: white; margin-top: 10px; }
-    #startGameBtn:disabled { background: #ccc; }
+        .reel .symbol-list {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .reel .symbol-list span {
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    .bet-amount-group {
-      display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
-      margin: 10px 0;
-    }
-    .bet-amount-btn { background: #4caf50; color: white; }
-    .bet-amount-btn.selected { background: #f59e42; color: black; }
+        @keyframes spinReelAnimation {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-1000px); }
+        }
 
-    .slot-machine {
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      gap: 10px;
-      margin: 20px 0;
-      padding: 10px;
-      background: #e0e0e0;
-      border-radius: 10px;
-      box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
-    }
-    .reel {
-      width: 80px;
-      height: 800px;
-      border: 2px solid #ccc;
-      background: #fff;
-      border-radius: 5px;
-      overflow: hidden;
-      position: relative;
-    }
-    .symbol-list {
-      position: absolute;
-      top: 0;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-    .symbol-list span {
-      height: 100px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 2.5rem;
-    }
-    #slotResult {
-      margin-top: 10px;
-      font-weight: bold;
-      font-size: 1.4rem;
-      color: #333;
-    }
-    .result-popup {
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.95);
-      border: 2px solid #10B981;
-      padding: 20px 30px;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #10B981;
-      display: none;
-      z-index: 9999;
-    }
-    .highlight-result {
-      border: 3px solid red;
-      border-radius: 6px;
-      box-shadow: 0 0 10px red;
-    }
-  </style>
+        #slotResult {
+            font-size: 1.8rem;
+            margin: 10px 0 10px 0;
+            min-height: 48px;
+            letter-spacing: 1px;
+            font-weight: bold;
+            color: #333;
+        }
+        /* Modal */
+        .modal-overlay {
+            position: fixed; left: 0; top: 0; right: 0; bottom: 0;
+            background: rgba(44, 62, 80, 0.32);
+            z-index: 1000;
+            display: none;
+        }
+        .modal {
+            position: fixed;
+            left: 50%;
+            top: 20%; /* Di chuyển modal lên cao hơn */
+            transform: translate(-50%,-50%);
+            background: white;
+            min-width: 280px;
+            max-width: 90vw;
+            border-radius: 1rem;
+            box-shadow: 0 10px 40px #0003;
+            z-index: 1010;
+            padding: 2.2rem 1.5rem 1.4rem 1.5rem;
+            text-align: center;
+            display: none;
+            flex-direction: column;
+            gap: 1.1rem;
+        }
+        .modal.show, .modal-overlay.show { display: flex !important; }
+        .modal-title { font-size: 1.3rem; font-weight: bold; color: #f59e42; margin-bottom: 0.3rem; }
+        .modal-message { font-size: 1.04rem; color: #334155; margin-bottom: 0.7rem; }
+        .modal-emoji { font-size: 2.7rem; margin-bottom: 0.2rem; }
+        .modal-btns { display: flex; justify-content: center; gap: 1rem; }
+        .modal-btns button {
+            background: #10B981; color: #fff;
+            font-size: 1.08rem; font-weight: bold; border: none; border-radius: 7px;
+            padding: 0.55rem 1.3rem; min-width: 110px;
+        }
+        .modal-btns button.secondary { background: #9ca3af; color: #222; }
+        @media (max-width: 500px) {
+            .container { padding: 1.2rem 0.5rem 1.5rem 0.5rem; }
+            .reel { font-size: 2.2rem; width: 60px; height: 80px; }
+            .reel .symbol-list span { height: 80px; }
+            @keyframes spinReelAnimation {
+                0% { transform: translateY(0); }
+                100% { transform: translateY(-800px); }
+            }
+            .modal { /* Adjust modal position for smaller screens too */
+                top: 15%;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🎰 Slot Machine - 5 Reels</h1>
-    <div>
-      <button id="connectWalletBtn"><span id="walletBtnIcon">🔗</span> <span id="walletBtnText">Kết nối ví</span></button>
-      <button id="depositBtn">💰 Nạp/Rút Xu</button>
-    </div>
-    <div class="balance-blk">Tổng Xu: <span id="currentBalance">0</span></div>
-    <div class="info-blk">Cược: <span id="displayBetAmount">0</span> Xu</div>
-    <div class="bet-amount-group" id="betAmountGroup">
-      <button type="button" class="bet-amount-btn" data-amount="2">2</button>
-      <button type="button" class="bet-amount-btn" data-amount="6">6</button>
-      <button type="button" class="bet-amount-btn" data-amount="10">10</button>
-      <button type="button" class="bet-amount-btn" data-amount="15">15</button>
-      <button type="button" class="bet-amount-btn" data-amount="20">20</button>
-    </div>
-    <button id="startGameBtn">🎲 Quay</button>
+    <div class="container">
+        <h1>Slot Machine</h1>
+        <div>
+            <button id="connectWalletBtn"><span id="walletBtnIcon">🔗</span> <span id="walletBtnText">Kết nối ví</span></button>
+            <button id="depositBtn">💰 Nạp/Rút Xu</button>
+        </div>
+        <div class="balance-blk">Tổng Xu: <span id="currentBalance">0</span></div>
+        <div class="info-blk" id="currentBetInfo">Cược: <span id="displayBetAmount">0</span> Xu</div>
+        <span class="bet-input-label">Vật phẩm cùng loại liên tiếp sẽ thắng!</span>
+        <div class="bet-amount-group" id="betAmountGroup">
+            <button type="button" class="bet-amount-btn" data-amount="2">2</button>
+            <button type="button" class="bet-amount-btn" data-amount="6">6</button>
+            <button type="button" class="bet-amount-btn" data-amount="10">10</button>
+            <button type="button" class="bet-amount-btn" data-amount="15">15</button>
+            <button type="button" class="bet-amount-btn" data-amount="20">20</button>
+        </div>
+        <button id="startGameBtn">Quay</button>
+        <div id="timerDisplay"></div>
 
-    <div class="slot-machine" id="slotMachine">
-      <div class="reel" id="reel1"><div class="symbol-list"></div></div>
-      <div class="reel" id="reel2"><div class="symbol-list"></div></div>
-      <div class="reel" id="reel3"><div class="symbol-list"></div></div>
-      <div class="reel" id="reel4"><div class="symbol-list"></div></div>
-      <div class="reel" id="reel5"><div class="symbol-list"></div></div>
+        <div class="slot-machine" id="slotMachine">
+            <div class="reel" id="reel1"><div class="symbol-list"></div></div>
+            <div class="reel" id="reel2"><div class="symbol-list"></div></div>
+            <div class="reel" id="reel3"><div class="symbol-list"></div></div>
+        </div>
+        <div id="slotResult">Nhấn Quay để bắt đầu!</div>
     </div>
-    <div id="slotResult">Nhấn Quay để bắt đầu!</div>
-  </div>
-  <div class="result-popup" id="popupResult">🎉 Bạn thắng 50 xu!</div>
+    <div class="modal-overlay" id="modalOverlay"></div>
+    <div class="modal" id="resultModal">
+        <div class="modal-title" id="modalTitle"></div>
+        <div class="modal-message" id="modalMessage"></div>
+        <div class="modal-emoji" id="modalEmoji"></div>
+        <div class="modal-btns">
+            <button id="playAgainBtn">Chơi Lại</button>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.0/dist/ethers.umd.min.js"></script>
+    <script>
+    // ======= CONFIG & BACKEND =======
+    const BACKEND_URL = "http://localhost:3000";
+    let provider, signer, userAddress = null;
+    let currentBalance = 0;
 
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.0/dist/ethers.umd.min.js"></script>
-  <script>
-    const symbols = ['🍒', '🍋', '🔔', '⭐', '🍀', '7️⃣'];
-    const REEL_HEIGHT = 100;
-    const reels = [...Array(5)].map((_, i) => document.getElementById(`reel${i+1}`));
+    // ======= DOM =======
+    const connectWalletBtn = document.getElementById('connectWalletBtn');
+    const walletBtnIcon = document.getElementById('walletBtnIcon');
+    const walletBtnText = document.getElementById('walletBtnText');
+    const depositBtn = document.getElementById('depositBtn');
+    const currentBalanceDisplay = document.getElementById('currentBalance');
+    const displayBetAmount = document.getElementById('displayBetAmount');
+    const currentBetInfo = document.getElementById('currentBetInfo');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const slotResultDisplay = document.getElementById('slotResult');
+    const betAmountBtns = document.querySelectorAll('.bet-amount-btn');
+    const spinButton = document.getElementById('startGameBtn');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const resultModal = document.getElementById('resultModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalEmoji = document.getElementById('modalEmoji');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+
+    // Slot specific DOM elements
+    const slotMachine = document.getElementById('slotMachine');
+    const reels = [
+        document.getElementById('reel1'),
+        document.getElementById('reel2'),
+        document.getElementById('reel3')
+    ];
     const symbolLists = reels.map(reel => reel.querySelector('.symbol-list'));
 
-    function populateReels() {
-      const symbolsToShow = [];
-      for (let i = 0; i < 8; i++) symbolsToShow.push(...symbols);
-      symbolLists.forEach(list => {
-        list.innerHTML = '';
-        symbolsToShow.forEach(sym => {
-          const el = document.createElement('span');
-          el.textContent = sym;
-          list.appendChild(el);
-        });
-      });
+    // ==== GAME VARS ====
+    let currentBetAmount = 2;
+    let gameLocked = false;
+
+    // Slot specific game variables
+    const symbols = ['🍒', '🍋', '🔔', '⭐', '🍀', '7️⃣'];
+    const REEL_HEIGHT = 100;
+    const SPIN_DURATION_BASE = 1000;
+    const SPIN_DURATION_OFFSET = 300;
+    const FINAL_STOP_DURATION = 2000; // Thời gian thả chậm cho mỗi cuộn (mới)
+    const RESULT_DISPLAY_DELAY = 2500; // Thời gian chờ trước khi hiện modal (mới)
+
+    // ======= ĐỒNG BỘ XU =======
+    async function refreshBalance() {
+        if (!userAddress) {
+            currentBalance = 0;
+            updateWalletDisplay();
+            return;
+        }
+        try {
+            const res = await fetch(`${BACKEND_URL}/balance/${userAddress}`);
+            if (res.ok) {
+                const data = await res.json();
+                currentBalance = data.coins;
+            } else currentBalance = 0;
+        } catch { currentBalance = 0; }
+        updateWalletDisplay();
+    }
+    function updateWalletDisplay() {
+        currentBalanceDisplay.textContent = currentBalance.toLocaleString();
+    }
+    function updateWalletUI() {
+        if (userAddress) {
+            connectWalletBtn.disabled = true;
+            connectWalletBtn.classList.add('connected');
+            walletBtnIcon.textContent = "🟢";
+            walletBtnText.textContent = "Đã kết nối";
+        } else {
+            connectWalletBtn.disabled = false;
+            connectWalletBtn.classList.remove('connected');
+            walletBtnIcon.textContent = "🔗";
+            walletBtnText.textContent = "Kết nối ví";
+        }
+    }
+    function setControlsBasedOnWallet() {
+        const disabled = !userAddress;
+        betAmountBtns.forEach(btn => btn.disabled = disabled);
+        spinButton.disabled = disabled;
+        depositBtn.disabled = disabled;
+    }
+    depositBtn.addEventListener('click', () => {
+        window.location.href = "https://nguyenhiro.github.io/Minigamex/deposit.html?from=slotgame";
+    });
+
+    // ======= MODAL =======
+    function showResultModal(title, message, emoji) {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        modalEmoji.textContent = emoji || '';
+        resultModal.classList.add("show");
+        modalOverlay.classList.add("show");
+    }
+    function hideResultModal() {
+        resultModal.classList.remove("show");
+        modalOverlay.classList.remove("show");
     }
 
-    function showResultPopup(text, isWin) {
-      const popup = document.getElementById('popupResult');
-      popup.textContent = text;
-      popup.style.borderColor = isWin ? '#10B981' : '#dc2626';
-      popup.style.color = isWin ? '#10B981' : '#dc2626';
-      popup.style.display = 'block';
-      setTimeout(() => popup.style.display = 'none', 3000);
+    // ==== REEL GENERATION ====
+    function populateReels() {
+        // Tạo đủ symbols để cuộn mượt mà. 5 lần lặp lại là đủ.
+        const tempSymbols = [];
+        for(let i = 0; i < 5; i++) {
+            tempSymbols.push(...symbols);
+        }
+
+        symbolLists.forEach(list => {
+            list.innerHTML = '';
+            tempSymbols.forEach(symbol => {
+                const span = document.createElement('span');
+                span.textContent = symbol;
+                list.appendChild(span);
+            });
+        });
+    }
+
+    // ====== GAME LOGIC ======
+    function initializeGame() {
+        currentBetAmount = 2;
+        gameLocked = false;
+        betAmountBtns.forEach(btn => btn.classList.remove('selected'));
+        betAmountBtns.forEach(btn => {
+            if (btn.dataset.amount === "2") btn.classList.add('selected');
+        });
+        spinButton.disabled = !userAddress;
+        spinButton.style.display = "inline-block";
+        slotResultDisplay.innerHTML = 'Nhấn Quay để bắt đầu!';
+        timerDisplay.textContent = "";
+
+        populateReels();
+        reels.forEach(reel => {
+            const symbolList = reel.querySelector('.symbol-list');
+            reel.classList.remove('spinning');
+            symbolList.style.transition = 'none'; // Tắt transition để reset ngay
+            symbolList.style.transform = `translateY(0px)`; // Reset position
+        });
+        updateWalletDisplay();
+        updateBetInfo();
+        hideResultModal();
+        setControlsBasedOnWallet();
+    }
+    function updateBetInfo() {
+        displayBetAmount.textContent = currentBetAmount.toLocaleString();
     }
 
     async function spinReels() {
-      const finalResults = [];
+        if (!userAddress) { showResultModal("Chưa kết nối ví", "Vui lòng kết nối ví.", "⚠️"); return; }
+        if (currentBetAmount <= 0) { showResultModal("Thiếu cược", "Chọn số xu đặt cược!", "⚠️"); return; }
+        if (currentBetAmount > currentBalance) { showResultModal("Thiếu xu", "Bạn không đủ xu!", "💸"); return; }
+        if (gameLocked) return;
+        gameLocked = true;
+        spinButton.disabled = true;
+        slotResultDisplay.textContent = "Đang quay...";
+        timerDisplay.textContent = "";
 
-      // Xóa highlight cũ
-      document.querySelectorAll('.highlight-result').forEach(el => el.classList.remove('highlight-result'));
+        try {
+            // First, deduct the bet
+            let betResponse = await fetch(`${BACKEND_URL}/play/bet`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ wallet: userAddress, betAmount: currentBetAmount })
+            });
+            let betText = await betResponse.text();
+            let betData = null;
+            try { betData = JSON.parse(betText); } catch(e) {}
+            if (!betResponse.ok || !betData || !betData.success) {
+                slotResultDisplay.innerHTML = "Lỗi khi đặt cược!";
+                showResultModal("API lỗi", betData && betData.error ? betData.error : betText, "⚠️");
+                await refreshBalance();
+                gameLocked = false;
+                spinButton.disabled = false;
+                return;
+            }
+            await refreshBalance();
 
-      populateReels();
+            const finalResults = [];
+            let spinPromises = [];
 
-      const promises = reels.map((reel, i) => {
-        const list = symbolLists[i];
-        const targetSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-        finalResults.push(targetSymbol);
-        const totalSpin = symbols.length * 4 + symbols.indexOf(targetSymbol);
-        const finalY = -REEL_HEIGHT * totalSpin;
-        list.style.transition = `transform ${800 + i * 150}ms ease-out`;
-        list.style.transform = `translateY(${finalY}px)`;
-        return new Promise(resolve => {
-          setTimeout(() => {
-            list.style.transition = 'none';
-            resolve();
-          }, 800 + i * 150 + 100);
-        });
-      });
+            populateReels(); // Đảm bảo các reel có đủ biểu tượng để quay mượt
 
-      await Promise.all(promises);
+            reels.forEach((reel, index) => {
+                const symbolList = reel.querySelector('.symbol-list');
+                const targetSymbolIndex = Math.floor(Math.random() * symbols.length);
+                const targetSymbol = symbols[targetSymbolIndex];
+                finalResults.push(targetSymbol);
 
-      // Tô đỏ biểu tượng trúng
-      symbolLists.forEach((list, i) => {
-        const children = list.querySelectorAll('span');
-        const total = children.length;
-        const targetSymbol = finalResults[i];
-        const stopIndex = total - (symbols.length * 4 + symbols.indexOf(targetSymbol));
-        const el = children[stopIndex];
-        if (el) el.classList.add('highlight-result');
-      });
+                // Reset transition and position for new spin
+                symbolList.style.transition = 'none';
+                symbolList.style.transform = `translateY(0)`; // Đặt về vị trí 0 để animation bắt đầu nhất quán
 
-      const resultText = `Kết quả: ${finalResults.join(' ')}`;
-      const isWin = finalResults.every(s => s === finalResults[0]);
-      showResultPopup(isWin ? '🎉 Bạn thắng lớn!' : '😢 Bạn chưa may mắn!', isWin);
+                setTimeout(() => { // Small delay to allow reset to apply before starting spin
+                    reel.classList.add('spinning'); // Bắt đầu animation quay nhanh (CSS)
+
+                    // Tính toán vị trí dừng cuối cùng dựa trên biểu tượng mục tiêu
+                    // Chúng ta cần di chuyển qua một số chu kỳ để tạo cảm giác "quay"
+                    const totalCyclesToSpin = 3; // Số vòng quay ảo trước khi dừng
+                    const targetOffset = symbols.indexOf(targetSymbol); // Vị trí của symbol trong mảng `symbols`
+                    const finalTranslateY = -((symbols.length * totalCyclesToSpin) + targetOffset) * REEL_HEIGHT;
+
+                    // Apply the ease-out transition to slow down and stop
+                    symbolList.style.transition = `transform ${SPIN_DURATION_BASE + (index * SPIN_DURATION_OFFSET)}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+                    symbolList.style.transform = `translateY(${finalTranslateY}px)`;
+
+                    spinPromises.push(new Promise(resolve => {
+                        setTimeout(() => {
+                            // Khi đã dừng hoàn toàn (transition kết thúc)
+                            reel.classList.remove('spinning'); // Dừng animation quay nhanh (CSS)
+                            // Đặt lại symbol-list chỉ với một symbol duy nhất là kết quả
+                            symbolList.innerHTML = '';
+                            const resultSpan = document.createElement('span');
+                            resultSpan.textContent = targetSymbol;
+                            symbolList.appendChild(resultSpan);
+                            symbolList.style.transition = 'none'; // Đảm bảo không có transition khi reset
+                            symbolList.style.transform = `translateY(0px)`; // Đặt về vị trí hiển thị chính giữa
+                            resolve();
+                        }, SPIN_DURATION_BASE + (index * SPIN_DURATION_OFFSET));
+                    }));
+                }, 50); // Small delay to let initial translateY(0) apply
+            });
+
+            await Promise.all(spinPromises); // Chờ tất cả các cuộn dừng hoàn toàn
+
+            // Thêm độ trễ trước khi hiển thị modal
+            setTimeout(() => {
+                checkSlotResult(finalResults);
+            }, RESULT_DISPLAY_DELAY); // Chờ 1 giây sau khi reels dừng
+
+        } catch (e) {
+            slotResultDisplay.innerHTML = "Lỗi!";
+            showResultModal("Lỗi mạng/API", String(e), "⚠️");
+            await refreshBalance();
+            reels.forEach(reel => {
+                reel.classList.remove('spinning');
+                const symbolList = reel.querySelector('.symbol-list');
+                symbolList.style.transition = 'none';
+                symbolList.style.transform = `translateY(0px)`;
+            });
+            gameLocked = false;
+            spinButton.disabled = false;
+        }
     }
 
-    document.getElementById('startGameBtn').onclick = spinReels;
-    window.onload = populateReels;
-  </script>
+    async function checkSlotResult(resultSymbols) {
+        let winnings = 0;
+        let matchingSymbolsCount = 0;
+
+        const s1 = resultSymbols[0];
+        const s2 = resultSymbols[1];
+        const s3 = resultSymbols[2];
+
+        // Logic kiểm tra số biểu tượng giống nhau
+        if (s1 === s2 && s2 === s3) {
+            matchingSymbolsCount = 3;
+        } else if (s1 === s2 || s2 === s3) { // 2 biểu tượng giống nhau liên tiếp
+            matchingSymbolsCount = 2;
+        } else { // Không có cặp nào giống nhau liên tiếp
+            matchingSymbolsCount = 1; // Chỉ tính 1 biểu tượng trùng khớp nếu có (để trả 1 xu)
+        }
+
+
+        // Calculate winnings based on bet and matching symbols
+        switch (currentBetAmount) {
+            case 2:
+                if (matchingSymbolsCount === 1) winnings = 1;
+                else if (matchingSymbolsCount === 2) winnings = 3;
+                else if (matchingSymbolsCount === 3) winnings = 10;
+                break;
+            case 6:
+                if (matchingSymbolsCount === 1) winnings = 1;
+                else if (matchingSymbolsCount === 2) winnings = 12;
+                else if (matchingSymbolsCount === 3) winnings = 30;
+                break;
+            case 10:
+                if (matchingSymbolsCount === 1) winnings = 1;
+                else if (matchingSymbolsCount === 2) winnings = 20;
+                else if (matchingSymbolsCount === 3) winnings = 50;
+                break;
+            case 15:
+                if (matchingSymbolsCount === 1) winnings = 1;
+                else if (matchingSymbolsCount === 2) winnings = 30;
+                else if (matchingSymbolsCount === 3) winnings = 70;
+                break;
+            case 20:
+                if (matchingSymbolsCount === 1) winnings = 1;
+                else if (matchingSymbolsCount === 2) winnings = 40;
+                else if (matchingSymbolsCount === 3) winnings = 100;
+                break;
+            default:
+                winnings = 0;
+        }
+
+        try {
+            let response = await fetch(`${BACKEND_URL}/play/win`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ wallet: userAddress, winAmount: winnings })
+            });
+            let text = await response.text();
+            let data = null;
+            try { data = JSON.parse(text); } catch(e){}
+            if (!response.ok || !data || !data.success) {
+                showResultModal("API lỗi", data && data.error ? data.error : text, "⚠️");
+            } else {
+                if (winnings > 0) {
+                    slotResultDisplay.innerHTML = `Thắng: ${winnings.toLocaleString()} Xu!`;
+                    showResultModal("Chúc mừng!", `Bạn thắng ${winnings.toLocaleString()} xu!`, "🎉");
+                } else {
+                    slotResultDisplay.innerHTML = `Bạn đã thua ${currentBetAmount.toLocaleString()} Xu.`;
+                    showResultModal("Thua rồi!", `Bạn đã thua ${currentBetAmount.toLocaleString()} xu.`, "😢");
+                }
+            }
+        } catch (e) {
+            showResultModal("API lỗi", String(e), "⚠️");
+        }
+        await refreshBalance();
+        gameLocked = false;
+        spinButton.disabled = false;
+    }
+
+    betAmountBtns.forEach(btn => btn.onclick = () => {
+        if (gameLocked) return;
+        betAmountBtns.forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        currentBetAmount = parseInt(btn.dataset.amount);
+        updateBetInfo();
+    });
+
+    spinButton.onclick = spinReels;
+
+    playAgainBtn.onclick = () => {
+        initializeGame();
+    };
+    modalOverlay.onclick = hideResultModal;
+
+    connectWalletBtn.onclick = connectWallet;
+    async function connectWallet() {
+        if (typeof window.ethereum === 'undefined') {
+            alert("Bạn cần cài MetaMask! https://metamask.io/download");
+            return;
+        }
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            if (accounts.length > 0) {
+                userAddress = accounts[0].toLowerCase();
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner(userAddress);
+                updateWalletUI();
+                await refreshBalance();
+                setControlsBasedOnWallet();
+                initializeGame();
+            }
+        } catch (e) {
+            alert("Lỗi khi kết nối ví: " + (e.message || e));
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (window.ethereum) {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts.length > 0) {
+                userAddress = accounts[0].toLowerCase();
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner(userAddress);
+                updateWalletUI();
+                await refreshBalance();
+            }
+        }
+        setControlsBasedOnWallet();
+        initializeGame();
+    });
+    window.addEventListener('focus', () => {
+        refreshBalance();
+    });
+
+    if(window.ethereum){
+        window.ethereum.on('accountsChanged', async (accounts) => {
+            if(accounts.length > 0){
+                userAddress = accounts[0].toLowerCase();
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner(userAddress);
+                updateWalletUI();
+                await refreshBalance();
+            } else {
+                userAddress = null;
+                updateWalletUI();
+                currentBalance = 0;
+                updateWalletDisplay();
+            }
+            setControlsBasedOnWallet();
+        });
+    }
+    </script>
 </body>
 </html>
